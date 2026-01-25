@@ -1,0 +1,125 @@
+Informações Importantes
+Desafio: Ingestão, curadoria e disponibilização de dados fictícios do Jira
+Pré-requisitos: Curso de Python 
+Linguagem: Python
+
+O objetivo deste desafio é avaliar a capacidade do participante em desenvolver um pipeline de Engenharia de Dados em Python,
+aplicando conceitos fundamentais como ingestão de dados, organização em camadas, transformações e aplicação de regras de
+negócio.
+O foco principal da avaliação será a correta aplicação da Arquitetura Medallion, a clareza do código e a implementação da
+lógica de cálculo de SLA.
+
+Será disponibilizado um arquivo JSON contendo dados fictícios extraídos do JIRA.
+Características do data source:
+- Arquivo em formato JSON
+- Estrutura aninhada (listas e objetos internos)
+- Dados desnormalizados
+- Contém chamados com status Open, Done e Resolved
+
+Uma cópia desse arquivo esta em jira_issues_raw.txt
+
+O arquivo estará armazenado originalmente em um Azure Blob Storage, que será utilizado exclusivamente como origem dos 
+dados.
+
+Não deverá gravar dados no Blob Storage. 
+Toda a persistência dos dados deve ocorrer localmente no projeto.
+
+O pipeline deve ser desenvolvido seguindo a Arquitetura Medallion, organizada nas seguintes camadas:
+
+Raw
+Bronze
+Silver
+Gold
+
+Implementação
+Transformações:
+- Leitura de arquivos JSON com estruturas aninhadas
+- Manipulação de listas e dicionários
+- Criação de colunas derivadas de objetos internos
+- Organização clara do pipeline por camadas
+
+
+Métrica – SLA por Chamado
+O participante deverá calcular o tempo de resolução de cada chamado considerando:
+- Data/hora de abertura
+- Data/hora de resolução
+Chamados com status Open não possuem data de resolução e não devem ser considerados no cálculo final de SLA, mas devem permanecer no 
+pipeline até a camada Silver.
+
+O cálculo do SLA deve considerar:
+- Apenas dias úteis
+- Exclusão de finais de semana
+- Exclusão de feriados nacionais
+
+Para identificar feriados nacionais, deverá ser consumida uma API pública. 
+A escolha da API fica a critério do participante.
+
+A lógica de cálculo de SLA deve ser implementada em um arquivo Python separado (exemplo: `sla_calculation.py`).
+
+Devem existir funções responsáveis por:
+- Calcular o tempo de resolução em horas úteis
+- Definir o SLA esperado de acordo com a prioridade
+- Indicar se o SLA foi atendido ou violado
+
+Espera-se o uso de estruturas básicas da linguagem Python, como:
+- if / elif / else
+- for
+- Funções reutilizáveis
+- Manipulação de datas
+
+As funções devem ser importadas e utilizadas no pipeline principal, sendo aplicadas na construção da camada Gold.
+
+Tabela Final – SLA por Chamado
+A tabela final deve conter, no mínimo, os seguintes campos:
+- ID do chamado
+- Tipo do chamado
+- Analista responsável
+- Prioridade
+- Data de abertura
+- Data de resolução
+- Tempo de resolução em horas úteis
+- SLA esperado (em horas)
+- Indicador de SLA atendido ou não atendido
+Apenas chamados com status Done ou Resolved devem compor essa
+tabela.
+
+Entregáveis
+- Projeto completo em Python
+- Pipeline organizado por camadas (Bronze, Silver e Gold)
+- Persistência dos dados localmente no projeto
+- Projeto versionado em um repositório GitHub
+- Arquivo `README.md` contendo:
+- Instruções para execução do projeto
+- Explicação da arquitetura do pipeline
+- Descrição da lógica de cálculo do SLA
+- Dicionário de dados da tabela final e dos relatórios
+- Arquivo `requirements.txt`
+
+Premissas do Projeto
+- Utilizar Python
+- Utilizar bibliotecas nativas do Python 
+- Pandas está liberado para leitura e transformações
+- azure-identity está liberado para se conectar ao blob storage
+
+- O projeto deve ser entregue no GitHub
+Diferenciais (Não Obrigatórios)
+- Código modular e reutilizável
+- Uso de variáveis de ambiente
+- Utilização de ambiente virtual
+- Histórico de commits bem estruturado
+- Tratamentos simples de qualidade de dados
+
+ que será avaliado
+
+O que será avaliado
+- Entrega no prazo
+- Organização do pipeline e correta aplicação da Arquitetura Medallion
+- Clareza, legibilidade e estrutura do código
+- Correta implementação da lógica de SLA
+- Capacidade de tratar JSON aninhado
+- Qualidade da documentação
+Uso correto do git ignore
+- cODIGO PYTHON formato Pep
+
+Temos o arquivo download_jira_blob.py mas deve-se adequa-lo as boas praticas sepoarando no gitignore, MODULARIZAÇÃO E BOAS PRÁTICAS
+

@@ -1,0 +1,1 @@
+"""Jira Medallion pipeline package."""
