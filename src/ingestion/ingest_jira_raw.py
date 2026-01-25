@@ -6,9 +6,12 @@ import shutil
 from pathlib import Path
 
 from src.utils.config import (
+    AZURE_ACCOUNT_URL,
     AZURE_BLOB_NAME,
+    AZURE_CLIENT_ID,
+    AZURE_CLIENT_SECRET,
     AZURE_CONTAINER_NAME,
-    AZURE_STORAGE_CONNECTION_STRING,
+    AZURE_TENANT_ID,
     RAW_DIR,
     RAW_INPUT_PATH,
 )
@@ -37,13 +40,25 @@ def download_from_azure_blob(destination_dir: Path) -> Path:
 
     TODO: Implement Azure SDK download using environment variables.
     """
-    if not all([AZURE_STORAGE_CONNECTION_STRING, AZURE_CONTAINER_NAME, AZURE_BLOB_NAME]):
-        raise ValueError("Azure credentials are not configured in environment variables.")
+    has_service_principal = all(
+        [AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_ACCOUNT_URL]
+    )
+    if not has_service_principal:
+        raise ValueError(
+            "Azure credentials are not configured in environment variables."
+        )
+    if not all([AZURE_CONTAINER_NAME, AZURE_BLOB_NAME]):
+        raise ValueError("Azure container/blob names are not configured.")
 
     # TODO: Use azure-storage-blob to download the blob to destination_dir.
     # Example (placeholder):
     #   from azure.storage.blob import BlobServiceClient
     #   service_client = BlobServiceClient.from_connection_string(AZURE_STORAGE_CONNECTION_STRING)
+    # Or with service principal:
+    #   from azure.identity import ClientSecretCredential
+    #   from azure.storage.blob import BlobServiceClient
+    #   credential = ClientSecretCredential(AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET)
+    #   service_client = BlobServiceClient(account_url=AZURE_ACCOUNT_URL, credential=credential)
     #   blob_client = service_client.get_blob_client(container=AZURE_CONTAINER_NAME, blob=AZURE_BLOB_NAME)
     #   destination_path = destination_dir / AZURE_BLOB_NAME
     #   with open(destination_path, "wb") as f:

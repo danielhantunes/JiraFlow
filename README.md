@@ -17,13 +17,19 @@ processes it through Raw, Bronze, Silver, and Gold layers to compute SLA metrics
 3. Run the pipeline:
    - `python -m src.main`
 
-Environment variables:
+Environment variables (service principal):
 - `RAW_INPUT_FILENAME` (default: `jira_issues_raw.txt`)
 - `HOLIDAY_API_URL` (default: `https://date.nager.at/api/v3/PublicHolidays`)
 - `HOLIDAY_COUNTRY_CODE` (default: `US`)
-- `AZURE_STORAGE_CONNECTION_STRING`
+- `AZURE_TENANT_ID`
+- `AZURE_CLIENT_ID`
+- `AZURE_CLIENT_SECRET`
+- `AZURE_ACCOUNT_URL`
 - `AZURE_CONTAINER_NAME`
 - `AZURE_BLOB_NAME`
+
+Local setup:
+- Copy `.env.example` to `.env` and fill in the values locally.
 
 ## SLA calculation logic
 - SLA = resolution time in business hours
