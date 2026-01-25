@@ -10,6 +10,43 @@ processes it through Raw, Bronze, Silver, and Gold layers to compute SLA metrics
 - **Silver**: clean data, convert dates, keep Open/Done/Resolved
 - **Gold**: keep only Done/Resolved, compute SLA metrics
 
+```
+Raw  ->  Bronze  ->  Silver  ->  Gold
+   |        |         |         |
+ data/raw  data/bronze data/silver data/gold
+```
+
+## Project structure
+- `src/`: application code and pipeline logic
+- `src/ingestion/`: raw ingestion into `data/raw`
+- `src/bronze/`: normalization and field selection
+- `src/silver/`: cleaning and filtering
+- `src/gold/`: SLA calculations and analytical output
+- `src/sla/`: reusable SLA utilities
+- `src/utils/`: config and date helpers
+- `data/raw`, `data/bronze`, `data/silver`, `data/gold`: local layer outputs
+
+```
+project_root/
+├── data/
+│   ├── raw/
+│   ├── bronze/
+│   ├── silver/
+│   └── gold/
+├── src/
+│   ├── ingestion/
+│   ├── bronze/
+│   ├── silver/
+│   ├── gold/
+│   ├── sla/
+│   └── utils/
+├── .env
+├── .env.example
+├── README.md
+├── requirements.txt
+└── .gitignore
+```
+
 ## How to run
 1. Create a virtual environment and install dependencies:
    - `pip install -r requirements.txt`
