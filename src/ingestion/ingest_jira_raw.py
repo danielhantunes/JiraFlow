@@ -7,7 +7,7 @@ from pathlib import Path
 
 from src.utils.config import (
     AZURE_ACCOUNT_URL,
-    AZURE_BLOB_NAME,
+    AZURE_BLOB_PREFIX,
     AZURE_CLIENT_ID,
     AZURE_CLIENT_SECRET,
     AZURE_CONTAINER_NAME,
@@ -34,11 +34,12 @@ def copy_local_raw_file(source_path: Path, destination_dir: Path) -> Path:
     return destination_path
 
 
-def download_from_azure_blob(destination_dir: Path) -> Path:
+def download_from_azure_blob(destination_dir: Path) -> list[Path]:
     """
-    Download raw file from Azure Blob Storage into Raw layer.
+    Download raw files from Azure Blob Storage into Raw layer.
 
-    TODO: Implement Azure SDK download using environment variables.
+    Downloads all blobs in the container or filters by prefix if provided.
+    Returns the list of downloaded file paths.
     """
     has_service_principal = all(
         [AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_ACCOUNT_URL]
@@ -47,27 +48,41 @@ def download_from_azure_blob(destination_dir: Path) -> Path:
         raise ValueError(
             "Azure credentials are not configured in environment variables."
         )
-    if not all([AZURE_CONTAINER_NAME, AZURE_BLOB_NAME]):
-        raise ValueError("Azure container/blob names are not configured.")
+    if not AZURE_CONTAINER_NAME:
+        raise ValueError("Azure container name is not configured.")
 
-    # TODO: Use azure-storage-blob to download the blob to destination_dir.
-    # Example (placeholder):
-    #   from azure.storage.blob import BlobServiceClient
-    #   service_client = BlobServiceClient.from_connection_string(AZURE_STORAGE_CONNECTION_STRING)
-    # Or with service principal:
-    #   from azure.identity import ClientSecretCredential
-    #   from azure.storage.blob import BlobServiceClient
-    #   credential = ClientSecretCredential(AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET)
-    #   service_client = BlobServiceClient(account_url=AZURE_ACCOUNT_URL, credential=credential)
-    #   blob_client = service_client.get_blob_client(container=AZURE_CONTAINER_NAME, blob=AZURE_BLOB_NAME)
-    #   destination_path = destination_dir / AZURE_BLOB_NAME
-    #   with open(destination_path, "wb") as f:
-    #       f.write(blob_client.download_blob().readall())
+    from azure.identity import ClientSecretCredential
+    from azure.storage.blob import BlobServiceClient
 
-    raise NotImplementedError("Azure download not implemented yet.")
+    credential = ClientSecretCredential(
+        AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET
+    )
+    service_client = BlobServiceClient(
+        account_url=AZURE_ACCOUNT_URL,
+        credential=credential,
+    )
+    container_client = service_client.get_container_client(AZURE_CONTAINER_NAME)
+
+    destination_dir.mkdir(parents=True, exist_ok=True)
+    blob_names = [
+        blob.name
+        for blob in container_client.list_blobs(name_starts_with=AZURE_BLOB_PREFIX or None)
+    ]
+    if not blob_names:
+        raise FileNotFoundError("No blobs found for the provided container/prefix.")
+
+    downloaded_paths: list[Path] = []
+    for blob_name in blob_names:
+        blob_client = container_client.get_blob_client(blob=blob_name)
+        destination_path = destination_dir / Path(blob_name).name
+        with open(destination_path, "wb") as file_handle:
+            file_handle.write(blob_client.download_blob().readall())
+        downloaded_paths.append(destination_path)
+
+    return downloaded_paths
 
 
-def ingest_raw_data() -> Path:
+def ingest_raw_data() -> Path | list[Path]:
     """
     Ingest raw data into the Raw layer.
 

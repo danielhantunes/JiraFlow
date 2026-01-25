@@ -26,7 +26,7 @@ Environment variables (service principal):
 - `AZURE_CLIENT_SECRET`
 - `AZURE_ACCOUNT_URL`
 - `AZURE_CONTAINER_NAME`
-- `AZURE_BLOB_NAME`
+- `AZURE_BLOB_PREFIX` (optional, downloads all blobs if empty)
 
 Local setup:
 - Copy `.env.example` to `.env` and fill in the values locally.
@@ -50,4 +50,4 @@ Local setup:
 
 ## Notes
 - Each layer can run independently through its respective module.
-- Azure Blob download is a placeholder and must be implemented to use cloud ingestion.
+- Azure Blob download uses service principal auth and supports downloading all blobs in a container.

@@ -10,6 +10,7 @@ try:
 except ModuleNotFoundError:  # pragma: no cover - optional dependency
     load_dotenv = None
 
+
 def _get_project_root() -> Path:
     """Return the project root directory based on this file location."""
     return Path(__file__).resolve().parents[2]
@@ -39,4 +40,4 @@ AZURE_CLIENT_SECRET = os.getenv("AZURE_CLIENT_SECRET", "")
 AZURE_ACCOUNT_URL = os.getenv("AZURE_ACCOUNT_URL", "")
 
 AZURE_CONTAINER_NAME = os.getenv("AZURE_CONTAINER_NAME", "")
-AZURE_BLOB_NAME = os.getenv("AZURE_BLOB_NAME", "")
+AZURE_BLOB_PREFIX = os.getenv("AZURE_BLOB_PREFIX", "")
