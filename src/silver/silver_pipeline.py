@@ -11,7 +11,7 @@ from src.utils.config import SILVER_DIR
 
 def read_bronze(bronze_path: Path) -> pd.DataFrame:
     """Read Bronze data from disk."""
-    return pd.read_csv(bronze_path)
+    return pd.read_parquet(bronze_path)
 
 
 def clean_data(df: pd.DataFrame) -> pd.DataFrame:
@@ -23,7 +23,21 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df["created_at"] = pd.to_datetime(df["created_at"], errors="coerce")
     df["resolved_at"] = pd.to_datetime(df["resolved_at"], errors="coerce")
-    df["status"] = df["status"].str.title()
+    df["status"] = df["status"].astype("string").str.strip().str.title()
+    df["priority"] = df["priority"].astype("string").str.strip().str.title()
+    df["assignee"] = df["assignee"].fillna("Unassigned")
+    return df
+
+
+def apply_basic_quality_checks(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Apply simple quality checks:
+    - drop rows missing issue_id or created_at
+    - drop duplicate issue_id
+    """
+    df = df.copy()
+    df = df.dropna(subset=["issue_id", "created_at"])
+    df = df.drop_duplicates(subset=["issue_id"])
     return df
 
 
@@ -47,6 +61,7 @@ def run_silver(bronze_path: Path, output_filename: str = "jira_silver.csv") -> P
     """Execute the Silver pipeline."""
     bronze_df = read_bronze(bronze_path)
     cleaned = clean_data(bronze_df)
-    filtered = filter_statuses(cleaned)
+    validated = apply_basic_quality_checks(cleaned)
+    filtered = filter_statuses(validated)
     output_path = SILVER_DIR / output_filename
     return write_silver(filtered, output_path)

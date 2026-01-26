@@ -5,11 +5,6 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-try:
-    from dotenv import load_dotenv
-except ModuleNotFoundError:  # pragma: no cover - optional dependency
-    load_dotenv = None
-
 
 def _get_project_root() -> Path:
     """Return the project root directory based on this file location."""
@@ -18,9 +13,22 @@ def _get_project_root() -> Path:
 
 PROJECT_ROOT = _get_project_root()
 
+def _load_env_file(env_path: Path) -> None:
+    """Load key=value pairs from a .env file using stdlib only."""
+    if not env_path.exists():
+        return
+    for line in env_path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        os.environ.setdefault(key, value)
+
+
 # Load environment variables from local .env if present (never committed).
-if load_dotenv is not None:
-    load_dotenv(PROJECT_ROOT / ".env", override=False)
+_load_env_file(PROJECT_ROOT / ".env")
 
 DATA_DIR = PROJECT_ROOT / "data"
 RAW_DIR = DATA_DIR / "raw"

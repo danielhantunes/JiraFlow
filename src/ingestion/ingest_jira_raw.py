@@ -4,6 +4,10 @@ from __future__ import annotations
 
 import shutil
 from pathlib import Path
+from typing import List
+from urllib.parse import quote, urlencode
+from urllib.request import Request, urlopen
+import xml.etree.ElementTree as ET
 
 from src.utils.config import (
     AZURE_ACCOUNT_URL,
@@ -52,31 +56,52 @@ def download_from_azure_blob(destination_dir: Path) -> list[Path]:
         raise ValueError("Azure container name is not configured.")
 
     from azure.identity import ClientSecretCredential
-    from azure.storage.blob import BlobServiceClient
 
     credential = ClientSecretCredential(
         AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET
     )
-    service_client = BlobServiceClient(
-        account_url=AZURE_ACCOUNT_URL,
-        credential=credential,
-    )
-    container_client = service_client.get_container_client(AZURE_CONTAINER_NAME)
+    token = credential.get_token("https://storage.azure.com/.default").token
 
+    account_url = AZURE_ACCOUNT_URL.rstrip("/")
     destination_dir.mkdir(parents=True, exist_ok=True)
-    blob_names = [
-        blob.name
-        for blob in container_client.list_blobs(name_starts_with=AZURE_BLOB_PREFIX or None)
-    ]
+
+    query = {"restype": "container", "comp": "list"}
+    if AZURE_BLOB_PREFIX:
+        query["prefix"] = AZURE_BLOB_PREFIX
+    list_url = f"{account_url}/{AZURE_CONTAINER_NAME}?{urlencode(query)}"
+    list_request = Request(
+        list_url,
+        headers={
+            "Authorization": f"Bearer {token}",
+            "x-ms-version": "2020-10-02",
+        },
+    )
+    with urlopen(list_request, timeout=60) as response:
+        xml_payload = response.read()
+
+    root = ET.fromstring(xml_payload)
+    blob_names: List[str] = []
+    for blob in root.findall(".//{*}Blob"):
+        name = blob.findtext("{*}Name")
+        if name:
+            blob_names.append(name)
     if not blob_names:
         raise FileNotFoundError("No blobs found for the provided container/prefix.")
 
     downloaded_paths: list[Path] = []
     for blob_name in blob_names:
-        blob_client = container_client.get_blob_client(blob=blob_name)
+        blob_url = f"{account_url}/{AZURE_CONTAINER_NAME}/{quote(blob_name)}"
+        request = Request(
+            blob_url,
+            headers={
+                "Authorization": f"Bearer {token}",
+                "x-ms-version": "2020-10-02",
+            },
+        )
         destination_path = destination_dir / Path(blob_name).name
-        with open(destination_path, "wb") as file_handle:
-            file_handle.write(blob_client.download_blob().readall())
+        with urlopen(request, timeout=300) as response:
+            with open(destination_path, "wb") as file_handle:
+                file_handle.write(response.read())
         downloaded_paths.append(destination_path)
 
     return downloaded_paths

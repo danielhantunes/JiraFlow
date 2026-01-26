@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from datetime import date
+import json
 from typing import Iterable, Set
-
-import requests
+from urllib.request import urlopen
 
 from src.utils.config import HOLIDAY_API_URL, HOLIDAY_COUNTRY_CODE
 
@@ -24,9 +24,9 @@ def fetch_public_holidays(
     country = country_code or HOLIDAY_COUNTRY_CODE
     url = f"{base_url}/{year}/{country}"
 
-    response = requests.get(url, timeout=30)
-    response.raise_for_status()
-    holidays = response.json()
+    with urlopen(url, timeout=30) as response:
+        payload = response.read().decode("utf-8")
+    holidays = json.loads(payload)
 
     return {date.fromisoformat(item["date"]) for item in holidays}
 

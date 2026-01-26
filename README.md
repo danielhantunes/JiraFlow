@@ -6,7 +6,7 @@ processes it through Raw, Bronze, Silver, and Gold layers to compute SLA metrics
 
 ## Architecture (Medallion layers)
 - **Raw**: store the original file as-is
-- **Bronze**: normalize and flatten JSON, select/rename key fields
+- **Bronze**: normalize and flatten JSON, select/rename key fields (Parquet output)
 - **Silver**: clean data, convert dates, keep Open/Done/Resolved
 - **Gold**: keep only Done/Resolved, compute SLA metrics
 
@@ -53,6 +53,11 @@ project_root/
 2. Place `jira_issues_raw.txt` in the project root (or set `RAW_INPUT_FILENAME`).
 3. Run the pipeline:
    - `python -m src.main`
+
+Dependencies:
+- `pandas`
+- `azure-identity`
+- `pyarrow` (required for Parquet output)
 
 Environment variables (service principal):
 - `RAW_INPUT_FILENAME` (default: `jira_issues_raw.txt`)
