@@ -1,32 +1,39 @@
-🚧 This project is under active development.
+# 🚧 Jira Medallion Pipeline  
+*This project is under active development.*
 
-# Jira Medallion Pipeline
+## Overview
+This project implements a **local data engineering pipeline** that ingests a nested JSON file of Jira issues and processes it through a **Medallion architecture (Raw → Bronze → Silver → Gold)** to produce reliable SLA metrics.
 
-## Project purpose
-Build a local data pipeline that ingests a nested JSON file of Jira issues and
-processes it through Raw, Bronze, Silver, and Gold layers to compute SLA metrics.
+The goal is to demonstrate **data modeling, data quality practices, and pipeline structuring** aligned with real-world analytics and reporting use cases.
 
-## Architecture (Medallion layers)
-- **Raw**: store the original file as-is
-- **Bronze**: normalize and flatten JSON, select/rename key fields (Parquet output)
-- **Silver**: clean data, convert dates, keep Open/Done/Resolved
-- **Gold**: keep only Done/Resolved, compute SLA metrics
+---
+
+## Project Purpose
+- Ingest Jira issue data from a JSON source
+- Normalize and clean semi-structured data
+- Apply business rules for SLA calculation
+- Produce analytics-ready datasets using layered data design
+
+---
+
+## Architecture — Medallion Layers
+
+| Layer  | Responsibility |
+|------|---------------|
+| **Raw** | Store the original input file exactly as received |
+| **Bronze** | Normalize and flatten JSON, select and rename key fields (Parquet output) |
+| **Silver** | Clean data, convert date fields, filter Open / Done / Resolved issues |
+| **Gold** | Keep only Done / Resolved issues and compute SLA metrics |
 
 ```
-Raw  ->  Bronze  ->  Silver  ->  Gold
-   |        |         |         |
- data/raw  data/bronze data/silver data/gold
+Raw  →  Bronze  →  Silver  →  Gold
+ |        |         |         |
+data/raw data/bronze data/silver data/gold
 ```
 
-## Project structure
-- `src/`: application code and pipeline logic
-- `src/ingestion/`: raw ingestion into `data/raw`
-- `src/bronze/`: normalization and field selection
-- `src/silver/`: cleaning and filtering
-- `src/gold/`: SLA calculations and analytical output
-- `src/sla/`: reusable SLA utilities
-- `src/utils/`: config and date helpers
-- `data/raw`, `data/bronze`, `data/silver`, `data/gold`: local layer outputs
+---
+
+## Project Structure
 
 ```
 project_root/
@@ -36,12 +43,12 @@ project_root/
 │   ├── silver/
 │   └── gold/
 ├── src/
-│   ├── ingestion/
-│   ├── bronze/
-│   ├── silver/
-│   ├── gold/
-│   ├── sla/
-│   └── utils/
+│   ├── ingestion/   # Raw data ingestion
+│   ├── bronze/      # Normalization and field selection
+│   ├── silver/      # Cleaning and filtering
+│   ├── gold/        # SLA calculations and analytics output
+│   ├── sla/         # Reusable SLA utilities
+│   └── utils/       # Configuration and date helpers
 ├── .env
 ├── .env.example
 ├── README.md
@@ -49,55 +56,129 @@ project_root/
 └── .gitignore
 ```
 
-## How to run
-1. Create a virtual environment and install dependencies:
-   - `pip install -r requirements.txt`
-2. Place `jira_issues_raw.txt` in the project root (or set `RAW_INPUT_FILENAME`).
-3. Run the pipeline:
-   - `python -m src.main`
+---
 
-Dependencies:
-- `pandas`
-- `azure-identity`
-- `pyarrow` (required for Parquet output)
+## How to Run
 
-Environment variables (service principal):
-- `RAW_INPUT_FILENAME` (default: `jira_issues_raw.txt`)
-- `HOLIDAY_API_URL` (default: `https://date.nager.at/api/v3/PublicHolidays`)
-- `HOLIDAY_COUNTRY_CODE` (default: `BR`)
-- `AZURE_TENANT_ID`
-- `AZURE_CLIENT_ID`
-- `AZURE_CLIENT_SECRET`
-- `AZURE_ACCOUNT_URL`
-- `AZURE_CONTAINER_NAME`
-- `AZURE_BLOB_PREFIX` (optional, downloads all blobs if empty)
+### Install dependencies
+```bash
+pip install -r requirements.txt
+```
 
-Local setup:
-- Copy `.env.example` to `.env` and fill in the values locally.
+---
 
-## SLA calculation logic
-- SLA = resolution time in business hours
-- Business hours exclude weekends and national holidays
-- Open issues are excluded from SLA calculations
-- SLA status is **met** when actual hours <= expected hours
+### Provide input data
+Place the Jira export file in the project root:
 
-## Optional data profiling (Bronze)
-Use the Bronze profiling utilities for a lightweight quality check:
-- % nulls per column
-- Cardinality per column
+```text
+jira_issues_raw.json
+```
+
+Or configure a custom filename using environment variables.
+
+---
+
+### Run the full pipeline
+```bash
+python -m src.main
+```
+
+Each layer can also be executed independently via its corresponding module.
+
+---
+
+## Dependencies
+- pandas
+- pyarrow (required for Parquet output)
+- azure-identity (for Azure Blob Storage authentication)
+
+---
+
+## Environment Variables
+
+### Required (Azure service principal)
+- AZURE_TENANT_ID
+- AZURE_CLIENT_ID
+- AZURE_CLIENT_SECRET
+- AZURE_ACCOUNT_URL
+- AZURE_CONTAINER_NAME
+
+### Optional
+- RAW_INPUT_FILENAME (default: jira_issues_raw.txt)
+- AZURE_BLOB_PREFIX (downloads all blobs if empty)
+- HOLIDAY_API_URL (default: https://date.nager.at/api/v3/PublicHolidays)
+- HOLIDAY_COUNTRY_CODE (default: BR)
+
+---
+
+## ⚙️ Local Setup
+Copy the example environment file and fill in your values:
+
+```bash
+cp .env.example .env
+```
+
+Environment variables are loaded locally using `python-dotenv`.
+
+---
+
+## 🔍 Optional: Bronze Data Profiling
+
+The Bronze layer includes **lightweight data profiling utilities** to perform a quick quality check before moving data to Silver.
+
+### Metrics
+- Percentage of null values per column
+- Column cardinality
 - Top values for key categorical fields
 
-## Final Gold schema
-- `issue_id`
-- `issue_type`
-- `assignee`
-- `priority`
-- `created_at`
-- `resolved_at`
-- `resolution_time_business_hours`
-- `expected_sla_hours`
-- `sla_status`
+### Run
+```bash
+python run_bronze_profile.py
+```
+
+### Example output
+```
+Row count: 12453
+Null % by column:
+  - assignee: 12.4%
+Cardinality by column:
+  - issue_type: 7
+Top values (categorical):
+  - status:
+      Done: 5321
+      In Progress: 4182
+```
+
+This step is optional but recommended as a **quality gate between Bronze and Silver**.
+
+---
+
+## SLA Calculation Logic
+- SLA is calculated as **resolution time in business hours**
+- Business hours exclude weekends and national holidays
+- Open issues are excluded from SLA metrics
+- SLA is considered **met** when:
+
+```
+actual_hours ≤ expected_hours
+```
+
+---
+
+## Final Gold Schema
+- issue_id
+- issue_type
+- assignee
+- priority
+- created_at
+- resolved_at
+- resolution_time_business_hours
+- expected_sla_hours
+- sla_status
+
+---
 
 ## Notes
-- Each layer can run independently through its respective module.
-- Azure Blob download uses service principal auth and supports downloading all blobs in a container.
+- Each Medallion layer can run independently
+- Azure Blob ingestion supports downloading all blobs in a container
+- The project is designed for local execution
