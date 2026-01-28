@@ -64,7 +64,7 @@ Dependencies:
 Environment variables (service principal):
 - `RAW_INPUT_FILENAME` (default: `jira_issues_raw.txt`)
 - `HOLIDAY_API_URL` (default: `https://date.nager.at/api/v3/PublicHolidays`)
-- `HOLIDAY_COUNTRY_CODE` (default: `US`)
+- `HOLIDAY_COUNTRY_CODE` (default: `BR`)
 - `AZURE_TENANT_ID`
 - `AZURE_CLIENT_ID`
 - `AZURE_CLIENT_SECRET`
@@ -80,6 +80,12 @@ Local setup:
 - Business hours exclude weekends and national holidays
 - Open issues are excluded from SLA calculations
 - SLA status is **met** when actual hours <= expected hours
+
+## Optional data profiling (Bronze)
+Use the Bronze profiling utilities for a lightweight quality check:
+- % nulls per column
+- Cardinality per column
+- Top values for key categorical fields
 
 ## Final Gold schema
 - `issue_id`
