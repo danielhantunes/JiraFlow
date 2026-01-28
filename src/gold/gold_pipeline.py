@@ -18,7 +18,7 @@ from src.utils.date_utils import fetch_public_holidays
 
 def read_silver(silver_path: Path) -> pd.DataFrame:
     """Read Silver data from disk."""
-    return pd.read_csv(silver_path, parse_dates=["created_at", "resolved_at"])
+    return pd.read_parquet(silver_path)
 
 
 def filter_resolved(df: pd.DataFrame) -> pd.DataFrame:
@@ -38,6 +38,7 @@ def calculate_sla_metrics(df: pd.DataFrame) -> pd.DataFrame:
     """Calculate SLA metrics for resolved issues."""
     df = df.copy()
 
+    # Holiday lookup is used to exclude non-business days from SLA time.
     years = set(df["created_at"].dt.year.unique()) | set(df["resolved_at"].dt.year.unique())
     holidays = build_holiday_set(years)
 
@@ -60,6 +61,9 @@ def calculate_sla_metrics(df: pd.DataFrame) -> pd.DataFrame:
 
 def select_gold_columns(df: pd.DataFrame) -> pd.DataFrame:
     """Select final Gold columns for analytics."""
+    if "assignee" not in df.columns and "assignee_name" in df.columns:
+        df = df.copy()
+        df["assignee"] = df["assignee_name"]
     return df[
         [
             "issue_id",

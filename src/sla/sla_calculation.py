@@ -35,6 +35,7 @@ def calculate_business_hours(
             interval_end = min(end_dt, day_end)
             if interval_end > interval_start:
                 total_hours += (interval_end - interval_start).total_seconds() / 3600
+        # Move to the next day boundary.
         current = datetime.combine(current.date(), time(0, 0)) + timedelta(days=1)
 
     return round(total_hours, 2)

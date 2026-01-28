@@ -21,8 +21,8 @@ The goal is to demonstrate **data modeling, data quality practices, and pipeline
 | Layer  | Responsibility |
 |------|---------------|
 | **Raw** | Store the original input file exactly as received |
-| **Bronze** | Normalize and flatten JSON, select and rename key fields (Parquet output) |
-| **Silver** | Clean data, convert date fields, filter Open / Done / Resolved issues |
+| **Bronze** | Normalize/flatten raw JSON with minimal transformation (Parquet output) |
+| **Silver** | Extract nested fields, standardize columns, clean data, and filter statuses (Parquet output) |
 | **Gold** | Keep only Done / Resolved issues and compute SLA metrics |
 
 ```
@@ -44,8 +44,8 @@ project_root/
 │   └── gold/
 ├── src/
 │   ├── ingestion/   # Raw data ingestion
-│   ├── bronze/      # Normalization and field selection
-│   ├── silver/      # Cleaning and filtering
+│   ├── bronze/      # Minimal normalization (raw-like)
+│   ├── silver/      # Extraction, cleaning, filtering
 │   ├── gold/        # SLA calculations and analytics output
 │   ├── sla/         # Reusable SLA utilities
 │   └── utils/       # Configuration and date helpers
@@ -133,7 +133,7 @@ The Bronze layer includes **lightweight data profiling utilities** to perform a 
 
 ### Run
 ```bash
-python run_bronze_profile.py
+python -c "from pathlib import Path; from src.bronze.bronze_pipeline import profile_bronze_file, format_profile_output; profile = profile_bronze_file(Path('data/bronze/jira_bronze.parquet'), categorical_columns=['status','priority','issue_type']); print(format_profile_output(profile))"
 ```
 
 ### Example output
@@ -149,7 +149,30 @@ Top values (categorical):
       In Progress: 4182
 ```
 
+You can also preview a small sample for a quick visual check:
+```bash
+python -c "import pandas as pd; from src.bronze.bronze_pipeline import preview_dataframe; df = pd.read_parquet('data/bronze/jira_bronze.parquet'); print(preview_dataframe(df, n=10))"
+```
+
 This step is optional but recommended as a **quality gate between Bronze and Silver**.
+
+---
+
+## 🔍 Optional: Silver Data Profiling
+
+The Silver layer includes optional profiling utilities to validate cleaned data before Gold.
+
+### Run
+```bash
+python -c "from pathlib import Path; from src.silver.silver_pipeline import profile_silver_file, format_profile_output; profile = profile_silver_file(Path('data/silver/jira_silver.parquet'), categorical_columns=['issue_type','status','priority','assignee_name','assignee_id','assignee_email']); print(format_profile_output(profile))"
+```
+
+### Preview
+```bash
+python -c "import pandas as pd; from src.silver.silver_pipeline import preview_dataframe; df = pd.read_parquet('data/silver/jira_silver.parquet'); print(preview_dataframe(df, n=10))"
+```
+
+This step is optional but recommended as a **quality gate between Silver and Gold**.
 
 ---
 

@@ -17,6 +17,7 @@ def _load_env_file(env_path: Path) -> None:
     """Load key=value pairs from a .env file using stdlib only."""
     if not env_path.exists():
         return
+    # Only set env vars that are not already defined.
     for line in env_path.read_text(encoding="utf-8").splitlines():
         line = line.strip()
         if not line or line.startswith("#") or "=" not in line:

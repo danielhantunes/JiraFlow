@@ -60,11 +60,13 @@ def download_from_azure_blob(destination_dir: Path) -> list[Path]:
     credential = ClientSecretCredential(
         AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET
     )
+    # Acquire a short-lived token for the Azure Storage REST API.
     token = credential.get_token("https://storage.azure.com/.default").token
 
     account_url = AZURE_ACCOUNT_URL.rstrip("/")
     destination_dir.mkdir(parents=True, exist_ok=True)
 
+    # List blobs in the container (optional prefix filter).
     query = {"restype": "container", "comp": "list"}
     if AZURE_BLOB_PREFIX:
         query["prefix"] = AZURE_BLOB_PREFIX
@@ -89,6 +91,7 @@ def download_from_azure_blob(destination_dir: Path) -> list[Path]:
         raise FileNotFoundError("No blobs found for the provided container/prefix.")
 
     downloaded_paths: list[Path] = []
+    # Download each blob to the Raw layer folder.
     for blob_name in blob_names:
         blob_url = f"{account_url}/{AZURE_CONTAINER_NAME}/{quote(blob_name)}"
         request = Request(

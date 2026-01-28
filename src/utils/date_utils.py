@@ -24,6 +24,7 @@ def fetch_public_holidays(
     country = country_code or HOLIDAY_COUNTRY_CODE
     url = f"{base_url}/{year}/{country}"
 
+    # Simple HTTP fetch using stdlib to avoid extra dependencies.
     with urlopen(url, timeout=30) as response:
         payload = response.read().decode("utf-8")
     holidays = json.loads(payload)

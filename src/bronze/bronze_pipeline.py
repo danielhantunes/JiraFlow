@@ -34,68 +34,14 @@ def normalize_issues(raw_json: Dict) -> pd.DataFrame:
     """
     validate_raw_schema(raw_json)
     issues = raw_json.get("issues", [])
+    # Minimal normalization: flatten nested JSON into a tabular structure.
     return pd.json_normalize(issues)
-
-
-def select_and_rename_fields(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Select and rename relevant fields for Bronze.
-
-    TODO: Update field mappings based on the actual Jira payload.
-    """
-    def _first_item_value(series: pd.Series, key: str) -> pd.Series:
-        return series.apply(
-            lambda items: items[0].get(key)
-            if isinstance(items, list) and items and isinstance(items[0], dict)
-            else pd.NA
-        )
-
-    selected = df.copy()
-
-    if "assignee" in selected.columns:
-        selected["assignee"] = _first_item_value(selected["assignee"], "name")
-
-    if "timestamps" in selected.columns:
-        selected["created_at"] = _first_item_value(selected["timestamps"], "created_at")
-        selected["resolved_at"] = _first_item_value(selected["timestamps"], "resolved_at")
-
-    columns_map = {
-        "id": "issue_id",
-        "issue_type": "issue_type",
-        "status": "status",
-        "priority": "priority",
-        "assignee": "assignee",
-        "created_at": "created_at",
-        "resolved_at": "resolved_at",
-    }
-
-    if "id" in selected.columns:
-        selected["issue_id"] = selected["id"].astype("string")
-
-    # Legacy Jira API field fallbacks (if present)
-    legacy_map = {
-        "fields.issuetype.name": "issue_type",
-        "fields.assignee.displayName": "assignee",
-        "fields.priority.name": "priority",
-        "fields.status.name": "status",
-        "fields.created": "created_at",
-        "fields.resolutiondate": "resolved_at",
-    }
-    for source_col, target_col in legacy_map.items():
-        if target_col not in selected.columns and source_col in selected.columns:
-            selected[target_col] = selected[source_col]
-
-    for target_col in columns_map.values():
-        if target_col not in selected.columns:
-            selected[target_col] = pd.NA
-
-    return selected[list(columns_map.values())]
 
 
 def add_source_file(df: pd.DataFrame, source_file: Path) -> pd.DataFrame:
     """Add a source file column for lineage."""
     df = df.copy()
-    df["source_file"] = source_file.name
+    df["source_file"] = source_file.name  # Lightweight lineage field.
     return df
 
 
@@ -111,6 +57,7 @@ def profile_dataframe(
         dict with row count, null percentage per column, cardinality per column,
         and top values for categorical columns.
     """
+    # Optional profiling for quick data-quality checks.
     categorical_columns = list(categorical_columns or [])
     def _safe_value(value: object) -> object:
         if isinstance(value, (list, dict)):
@@ -246,9 +193,8 @@ def run_bronze(
     for path in raw_paths:
         raw_json = read_raw_json(path)
         normalized = normalize_issues(raw_json)
-        bronze_df = select_and_rename_fields(normalized)
-        bronze_df = add_source_file(bronze_df, path)
-        frames.append(bronze_df)
+        normalized = add_source_file(normalized, path)
+        frames.append(normalized)
     bronze_df = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
     output_path = BRONZE_DIR / output_filename
     return write_bronze(bronze_df, output_path)
