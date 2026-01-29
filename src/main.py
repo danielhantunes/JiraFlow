@@ -12,8 +12,8 @@ def run_pipeline() -> None:
     """Run the end-to-end pipeline."""
     raw_path = ingest_raw_data()
     bronze_path = run_bronze(raw_path)
-    silver_path = run_silver(bronze_path)
-    #run_gold(silver_path)
+    run_silver(bronze_path)
+    run_gold()
 
 
 if __name__ == "__main__":

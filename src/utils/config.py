@@ -35,6 +35,7 @@ DATA_DIR = PROJECT_ROOT / "data"
 RAW_DIR = DATA_DIR / "raw"
 BRONZE_DIR = DATA_DIR / "bronze"
 SILVER_DIR = DATA_DIR / "silver"
+SILVER_CLEAN_DIR = SILVER_DIR / "clean"
 GOLD_DIR = DATA_DIR / "gold"
 SILVER_REJECTS_DIR = SILVER_DIR / "rejects"
 

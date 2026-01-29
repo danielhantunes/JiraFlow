@@ -8,7 +8,7 @@ from typing import Dict, List, Sequence, Tuple
 
 import pandas as pd
 
-from src.utils.config import SILVER_DIR, SILVER_REJECTS_DIR
+from src.utils.config import SILVER_CLEAN_DIR, SILVER_REJECTS_DIR
 
 
 def read_bronze(bronze_path: Path) -> pd.DataFrame:
@@ -258,5 +258,5 @@ def run_silver(bronze_path: Path, output_filename: str = "jira_silver.parquet") 
     if not rejects.empty:
         write_rejects(rejects)
     filtered = filter_statuses(validated)
-    output_path = SILVER_DIR / output_filename
+    output_path = SILVER_CLEAN_DIR / output_filename
     return write_silver(filtered, output_path)

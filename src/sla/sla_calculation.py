@@ -25,18 +25,20 @@ def calculate_business_hours(
     total_hours = 0.0
     current = start_dt
 
+    tzinfo = start_dt.tzinfo or end_dt.tzinfo
+
     while current.date() <= end_dt.date():
         is_weekday = current.weekday() < 5
         is_holiday = current.date() in holidays_set
         if is_weekday and not is_holiday:
-            day_start = datetime.combine(current.date(), business_start)
-            day_end = datetime.combine(current.date(), business_end)
+            day_start = datetime.combine(current.date(), business_start, tzinfo=tzinfo)
+            day_end = datetime.combine(current.date(), business_end, tzinfo=tzinfo)
             interval_start = max(current, day_start)
             interval_end = min(end_dt, day_end)
             if interval_end > interval_start:
                 total_hours += (interval_end - interval_start).total_seconds() / 3600
         # Move to the next day boundary.
-        current = datetime.combine(current.date(), time(0, 0)) + timedelta(days=1)
+        current = datetime.combine(current.date(), time(0, 0), tzinfo=tzinfo) + timedelta(days=1)
 
     return round(total_hours, 2)
 

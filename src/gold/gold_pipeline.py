@@ -12,13 +12,16 @@ from src.sla.sla_calculation import (
     get_expected_sla_hours,
     get_sla_status,
 )
-from src.utils.config import GOLD_DIR, HOLIDAY_COUNTRY_CODE
+from src.utils.config import GOLD_DIR, HOLIDAY_COUNTRY_CODE, SILVER_CLEAN_DIR
 from src.utils.date_utils import fetch_public_holidays
 
 
 def read_silver(silver_path: Path) -> pd.DataFrame:
     """Read Silver data from disk."""
-    return pd.read_parquet(silver_path)
+    df = pd.read_parquet(silver_path)
+    df["created_at"] = pd.to_datetime(df["created_at"], errors="coerce", utc=True)
+    df["resolved_at"] = pd.to_datetime(df["resolved_at"], errors="coerce", utc=True)
+    return df
 
 
 def filter_resolved(df: pd.DataFrame) -> pd.DataFrame:
@@ -86,7 +89,10 @@ def write_gold(df: pd.DataFrame, output_path: Path) -> Path:
     return output_path
 
 
-def run_gold(silver_path: Path, output_filename: str = "jira_gold.csv") -> Path:
+def run_gold(
+    silver_path: Path = SILVER_CLEAN_DIR / "jira_silver.parquet",
+    output_filename: str = "jira_gold.csv",
+) -> Path:
     """Execute the Gold pipeline."""
     silver_df = read_silver(silver_path)
     resolved = filter_resolved(silver_df)

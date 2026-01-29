@@ -41,6 +41,7 @@ project_root/
 │   ├── raw/
 │   ├── bronze/
 │   ├── silver/
+│   │   ├── clean/
 │   │   └── rejects/
 │   └── gold/
 ├── src/
@@ -167,12 +168,12 @@ The Silver layer includes optional profiling utilities to validate cleaned data 
 
 ### Run
 ```bash
-python -c "from pathlib import Path; from src.silver.silver_pipeline import profile_silver_file, format_profile_output; profile = profile_silver_file(Path('data/silver/jira_silver.parquet'), categorical_columns=['issue_type','status','priority','assignee_name','assignee_id','assignee_email']); print(format_profile_output(profile))"
+python -c "from pathlib import Path; from src.silver.silver_pipeline import profile_silver_file, format_profile_output; profile = profile_silver_file(Path('data/silver/clean/jira_silver.parquet'), categorical_columns=['issue_type','status','priority','assignee_name','assignee_id','assignee_email']); print(format_profile_output(profile))"
 ```
 
 ### Preview
 ```bash
-python -c "import pandas as pd; from src.silver.silver_pipeline import preview_dataframe; df = pd.read_parquet('data/silver/jira_silver.parquet'); print(preview_dataframe(df, n=10))"
+python -c "import pandas as pd; from src.silver.silver_pipeline import preview_dataframe; df = pd.read_parquet('data/silver/clean/jira_silver.parquet'); print(preview_dataframe(df, n=10))"
 ```
 
 This step is optional but recommended as a **quality gate between Silver and Gold**.
