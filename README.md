@@ -240,6 +240,16 @@ actual_hours ≤ expected_hours
 
 ---
 
+## Suggested KPIs (Gold)
+- SLA compliance rate (% met vs violated)
+- Average resolution time (business hours)
+- SLA compliance by priority
+- Average resolution time by priority
+- Resolution time by assignee
+- Volume of resolved issues per priority
+
+---
+
 ## Final Gold Schema
 - issue_id
 - issue_type
