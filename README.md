@@ -69,14 +69,14 @@ pip install -r requirements.txt
 
 ---
 
-### Provide input data
-Place the Jira export file in the project root:
+### Provide input data (optional)
+Option A — place the Jira export file in the project root:
 
 ```text
 jira_issues_raw.json
 ```
 
-Or configure a custom filename using environment variables.
+Option B — skip local file and use Azure Blob ingestion via environment variables.
 
 ---
 
