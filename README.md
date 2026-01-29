@@ -92,7 +92,7 @@ Each layer can also be executed independently via its corresponding module.
 - `data/bronze/jira_bronze.parquet`
 - `data/silver/clean/jira_silver.parquet`
 - `data/silver/rejects/jira_silver_rejects.parquet`
-- `data/gold/jira_gold.csv`
+- `data/gold/jira_gold.parquet`
 
 ---
 
@@ -188,6 +188,24 @@ This step is optional but recommended as a **quality gate between Silver and Gol
 
 ---
 
+## 🔍 Optional: Gold Data Profiling
+
+The Gold layer includes optional profiling utilities to validate the final SLA table.
+
+### Run
+```bash
+python -c "from pathlib import Path; from src.gold.gold_pipeline import profile_gold_file, format_profile_output; profile = profile_gold_file(Path('data/gold/jira_gold.parquet')); print(format_profile_output(profile))"
+```
+
+### Preview
+```bash
+python -c "import pandas as pd; from src.gold.gold_pipeline import preview_dataframe; df = pd.read_parquet('data/gold/jira_gold.parquet'); print(preview_dataframe(df, n=10))"
+```
+
+This step is optional and helps validate the final Gold output.
+
+---
+
 ## ✅ Silver Quality Checks and Rejects
 
 During Silver processing, basic quality checks are applied:
@@ -225,13 +243,16 @@ actual_hours ≤ expected_hours
 ## Final Gold Schema
 - issue_id
 - issue_type
-- assignee
+- assignee_name
 - priority
 - created_at
 - resolved_at
 - resolution_time_business_hours
 - expected_sla_hours
 - sla_status
+
+Note: `assignee_id` and `assignee_email` are excluded from Gold to keep the
+analytics table focused on reporting fields.
 
 ---
 

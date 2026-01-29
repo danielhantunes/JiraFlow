@@ -46,7 +46,6 @@ def extract_and_rename_fields(df: pd.DataFrame) -> pd.DataFrame:
         selected["assignee_name"] = _first_item_value(selected["assignee"], "name")
         selected["assignee_id"] = _first_item_value(selected["assignee"], "id")
         selected["assignee_email"] = _first_item_value(selected["assignee"], "email")
-        selected["assignee"] = selected["assignee_name"]
 
     # Extract created/resolved timestamps from the nested array.
     if "timestamps" in selected.columns:
@@ -58,7 +57,6 @@ def extract_and_rename_fields(df: pd.DataFrame) -> pd.DataFrame:
         "issue_type": "issue_type",
         "status": "status",
         "priority": "priority",
-        "assignee": "assignee",
         "assignee_name": "assignee_name",
         "assignee_id": "assignee_id",
         "assignee_email": "assignee_email",
@@ -72,7 +70,7 @@ def extract_and_rename_fields(df: pd.DataFrame) -> pd.DataFrame:
     # Legacy Jira API field fallbacks (if present)
     legacy_map = {
         "fields.issuetype.name": "issue_type",
-        "fields.assignee.displayName": "assignee",
+        "fields.assignee.displayName": "assignee_name",
         "fields.priority.name": "priority",
         "fields.status.name": "status",
         "fields.created": "created_at",
@@ -101,7 +99,6 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     df["resolved_at"] = pd.to_datetime(df["resolved_at"], errors="coerce", utc=True)
     df["status"] = df["status"].astype("string").str.strip().str.title()
     df["priority"] = df["priority"].astype("string").str.strip().str.title()
-    df["assignee"] = df["assignee"].fillna("Unassigned")
     if "assignee_name" in df.columns:
         df["assignee_name"] = df["assignee_name"].fillna("Unassigned")
     df["created_at"] = df["created_at"].dt.strftime("%Y-%m-%dT%H:%M:%SZ")

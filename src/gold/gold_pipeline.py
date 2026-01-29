@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Set
+from typing import Dict, List, Sequence, Set
 
 import pandas as pd
 
@@ -77,22 +77,113 @@ def calculate_sla_metrics(df: pd.DataFrame) -> pd.DataFrame:
 
 def select_gold_columns(df: pd.DataFrame) -> pd.DataFrame:
     """Select final Gold columns for analytics."""
-    if "assignee" not in df.columns and "assignee_name" in df.columns:
-        df = df.copy()
-        df["assignee"] = df["assignee_name"]
-    return df
+    drop_cols = [col for col in ["assignee_id", "assignee_email"] if col in df.columns]
+    return df.drop(columns=drop_cols)
 
 
 def write_gold(df: pd.DataFrame, output_path: Path) -> Path:
     """Write Gold data to disk."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    df.to_csv(output_path, index=False)
+    df.to_parquet(output_path, index=False)
     return output_path
+
+
+def profile_dataframe(
+    df: pd.DataFrame,
+    categorical_columns: Sequence[str] | None = None,
+    top_n: int = 5,
+) -> Dict[str, object]:
+    """
+    Generate lightweight profiling metrics for a dataframe.
+
+    Returns:
+        dict with row count, null percentage per column, cardinality per column,
+        and top values for categorical columns.
+    """
+    categorical_columns = list(categorical_columns or [])
+    null_pct = (df.isna().mean() * 100).round(2).to_dict()
+    cardinality = df.nunique(dropna=True).to_dict()
+
+    top_values: Dict[str, Dict[str, int]] = {}
+    for col in categorical_columns:
+        if col in df.columns:
+            counts = df[col].astype("string").value_counts(dropna=True).head(top_n)
+            top_values[col] = counts.to_dict()
+
+    return {
+        "row_count": int(len(df)),
+        "null_pct": null_pct,
+        "cardinality": cardinality,
+        "top_values": top_values,
+    }
+
+
+def profile_gold_file(
+    gold_path: Path,
+    categorical_columns: Sequence[str] | None = None,
+    top_n: int = 5,
+) -> Dict[str, object]:
+    """
+    Load Gold Parquet and return profiling metrics.
+    """
+    df = pd.read_parquet(gold_path)
+    default_categoricals = [
+        "issue_type",
+        "status",
+        "priority",
+        "assignee_name",
+        "sla_status",
+    ]
+    return profile_dataframe(
+        df,
+        categorical_columns=categorical_columns or default_categoricals,
+        top_n=top_n,
+    )
+
+
+def format_profile_output(profile: Dict[str, object]) -> str:
+    """Format profiling metrics into a readable string."""
+    row_count = profile.get("row_count", 0)
+    null_pct = profile.get("null_pct", {})
+    cardinality = profile.get("cardinality", {})
+    top_values = profile.get("top_values", {})
+
+    sections: List[str] = []
+    sections.append(f"Row count: {row_count}")
+
+    if null_pct:
+        sections.append("Null % by column:")
+        for col, pct in sorted(null_pct.items()):
+            sections.append(f"  - {col}: {pct}%")
+
+    if cardinality:
+        sections.append("Cardinality by column:")
+        for col, count in sorted(cardinality.items()):
+            sections.append(f"  - {col}: {count}")
+
+    if top_values:
+        sections.append("Top values (categorical):")
+        for col, values in sorted(top_values.items()):
+            sections.append(f"  - {col}:")
+            for value, count in values.items():
+                sections.append(f"      {value}: {count}")
+
+    return "\n".join(sections)
+
+
+def preview_dataframe(df: pd.DataFrame, n: int = 10) -> str:
+    """Return a readable preview of the first N rows."""
+    preview = df.head(n)
+    text = preview.to_string(index=False)
+    lines = text.splitlines()
+    if len(lines) > 1:
+        lines.insert(1, "-" * len(lines[0]))
+    return "\n".join(lines)
 
 
 def run_gold(
     silver_path: Path = SILVER_CLEAN_DIR / "jira_silver.parquet",
-    output_filename: str = "jira_gold.csv",
+    output_filename: str = "jira_gold.parquet",
 ) -> Path:
     """Execute the Gold pipeline."""
     silver_df = read_silver(silver_path)
