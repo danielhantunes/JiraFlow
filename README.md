@@ -41,6 +41,7 @@ project_root/
 │   ├── raw/
 │   ├── bronze/
 │   ├── silver/
+│   │   └── rejects/
 │   └── gold/
 ├── src/
 │   ├── ingestion/   # Raw data ingestion
@@ -104,7 +105,7 @@ Each layer can also be executed independently via its corresponding module.
 - AZURE_CONTAINER_NAME
 
 ### Optional
-- RAW_INPUT_FILENAME (default: jira_issues_raw.txt)
+- RAW_INPUT_FILENAME (default: jira_issues_raw.json)
 - AZURE_BLOB_PREFIX (downloads all blobs if empty)
 - HOLIDAY_API_URL (default: https://date.nager.at/api/v3/PublicHolidays)
 - HOLIDAY_COUNTRY_CODE (default: BR)
@@ -118,13 +119,15 @@ Copy the example environment file and fill in your values:
 cp .env.example .env
 ```
 
-Environment variables are loaded locally using `python-dotenv`.
+Environment variables are loaded locally using a lightweight `.env` parser (stdlib).
 
 ---
 
 ## 🔍 Optional: Bronze Data Profiling
 
 The Bronze layer includes **lightweight data profiling utilities** to perform a quick quality check before moving data to Silver.
+
+Note: Bronze is minimally transformed and may include nested fields. Silver profiling is more stable for column-level checks.
 
 ### Metrics
 - Percentage of null values per column
@@ -133,7 +136,7 @@ The Bronze layer includes **lightweight data profiling utilities** to perform a 
 
 ### Run
 ```bash
-python -c "from pathlib import Path; from src.bronze.bronze_pipeline import profile_bronze_file, format_profile_output; profile = profile_bronze_file(Path('data/bronze/jira_bronze.parquet'), categorical_columns=['status','priority','issue_type']); print(format_profile_output(profile))"
+python -c "from pathlib import Path; from src.bronze.bronze_pipeline import profile_bronze_file, format_profile_output; profile = profile_bronze_file(Path('data/bronze/jira_bronze.parquet'), categorical_columns=['issue_type','status','priority']); print(format_profile_output(profile))"
 ```
 
 ### Example output
