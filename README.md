@@ -87,6 +87,13 @@ python -m src.main
 
 Each layer can also be executed independently via its corresponding module.
 
+### Output files
+- `data/raw/jira_issues_raw.json`
+- `data/bronze/jira_bronze.parquet`
+- `data/silver/clean/jira_silver.parquet`
+- `data/silver/rejects/jira_silver_rejects.parquet`
+- `data/gold/jira_gold.csv`
+
 ---
 
 ## Dependencies
@@ -110,6 +117,7 @@ Each layer can also be executed independently via its corresponding module.
 - AZURE_BLOB_PREFIX (downloads all blobs if empty)
 - HOLIDAY_API_URL (default: https://date.nager.at/api/v3/PublicHolidays)
 - HOLIDAY_COUNTRY_CODE (default: BR)
+- DEFAULT_HOLIDAY_YEAR (default: 2026)
 
 ---
 
