@@ -204,12 +204,21 @@ This keeps the Silver dataset clean while preserving discarded records for audit
 ## SLA Calculation Logic
 - SLA is calculated as **resolution time in business hours**
 - Business hours exclude weekends and national holidays
+- Each business day counts **24 hours**
+- Holiday years are derived from the data (`created_at` and `resolved_at`)
 - Open issues are excluded from SLA metrics
 - SLA is considered **met** when:
 
 ```
 actual_hours ≤ expected_hours
 ```
+
+### Expected SLA by Priority
+| Priority | Expected SLA |
+|----------|--------------|
+| High     | 24 hours     |
+| Medium   | 72 hours     |
+| Low      | 120 hours    |
 
 ---
 

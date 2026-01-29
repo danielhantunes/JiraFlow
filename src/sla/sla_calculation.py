@@ -10,12 +10,13 @@ def calculate_business_hours(
     start_dt: datetime,
     end_dt: datetime,
     holidays: Iterable[date],
-    business_start: time = time(9, 0),
-    business_end: time = time(17, 0),
+    business_start: time = time(0, 0),
+    business_end: time = time(23, 59, 59),
 ) -> float:
     """
     Calculate business hours between two datetimes.
 
+    Uses a 24-hour business day and excludes weekends/holidays.
     TODO: Adjust for timezones and custom business calendars if required.
     """
     if end_dt <= start_dt:
@@ -50,13 +51,11 @@ def get_expected_sla_hours(priority: str) -> int:
     TODO: Replace with business-approved SLA matrix.
     """
     mapping = {
-        "Highest": 8,
-        "High": 16,
-        "Medium": 24,
-        "Low": 40,
-        "Lowest": 80,
+        "High": 24,
+        "Medium": 72,
+        "Low": 120,
     }
-    return mapping.get(priority, 24)
+    return mapping.get(priority, 72)
 
 
 def get_sla_status(actual_hours: float, expected_hours: int) -> str:

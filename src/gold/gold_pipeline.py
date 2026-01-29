@@ -12,7 +12,12 @@ from src.sla.sla_calculation import (
     get_expected_sla_hours,
     get_sla_status,
 )
-from src.utils.config import GOLD_DIR, HOLIDAY_COUNTRY_CODE, SILVER_CLEAN_DIR
+from src.utils.config import (
+    DEFAULT_HOLIDAY_YEAR,
+    GOLD_DIR,
+    HOLIDAY_COUNTRY_CODE,
+    SILVER_CLEAN_DIR,
+)
 from src.utils.date_utils import fetch_public_holidays
 
 
@@ -42,7 +47,15 @@ def calculate_sla_metrics(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
 
     # Holiday lookup is used to exclude non-business days from SLA time.
-    years = set(df["created_at"].dt.year.unique()) | set(df["resolved_at"].dt.year.unique())
+    created_years = (
+        pd.to_datetime(df["created_at"], errors="coerce", utc=True).dt.year.dropna().unique()
+    )
+    resolved_years = (
+        pd.to_datetime(df["resolved_at"], errors="coerce", utc=True).dt.year.dropna().unique()
+    )
+    years = set(created_years) | set(resolved_years)
+    if not years:
+        years = {DEFAULT_HOLIDAY_YEAR}
     holidays = build_holiday_set(years)
 
     df["resolution_time_business_hours"] = df.apply(
@@ -67,19 +80,7 @@ def select_gold_columns(df: pd.DataFrame) -> pd.DataFrame:
     if "assignee" not in df.columns and "assignee_name" in df.columns:
         df = df.copy()
         df["assignee"] = df["assignee_name"]
-    return df[
-        [
-            "issue_id",
-            "issue_type",
-            "assignee",
-            "priority",
-            "created_at",
-            "resolved_at",
-            "resolution_time_business_hours",
-            "expected_sla_hours",
-            "sla_status",
-        ]
-    ]
+    return df
 
 
 def write_gold(df: pd.DataFrame, output_path: Path) -> Path:
