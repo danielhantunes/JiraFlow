@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Sequence
+from typing import Dict, List, Sequence, Tuple
 
 import pandas as pd
 
-from src.utils.config import SILVER_DIR
+from src.utils.config import SILVER_DIR, SILVER_REJECTS_DIR
 
 
 def read_bronze(bronze_path: Path) -> pd.DataFrame:
@@ -108,16 +109,26 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def apply_basic_quality_checks(df: pd.DataFrame) -> pd.DataFrame:
+def split_quality_checks(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
-    Apply simple quality checks:
-    - drop rows missing issue_id or created_at
-    - drop duplicate issue_id
+    Split rows into valid and rejected sets with a reject_reason column.
     """
     df = df.copy()
-    df = df.dropna(subset=["issue_id", "created_at"])
-    df = df.drop_duplicates(subset=["issue_id"])
-    return df
+    missing_issue_id = df["issue_id"].isna()
+    missing_created_at = df["created_at"].isna()
+    duplicate_issue_id = df["issue_id"].duplicated(keep="first")
+
+    reject_reason = pd.Series(pd.NA, index=df.index, dtype="string")
+    reject_reason = reject_reason.mask(missing_issue_id, "missing_issue_id")
+    reject_reason = reject_reason.mask(
+        missing_created_at, "missing_created_at"
+    ).mask(duplicate_issue_id, "duplicate_issue_id")
+
+    rejects = df[reject_reason.notna()].copy()
+    rejects["reject_reason"] = reject_reason[reject_reason.notna()]
+
+    valid = df[reject_reason.isna()].copy()
+    return valid, rejects
 
 
 def filter_statuses(df: pd.DataFrame) -> pd.DataFrame:
@@ -132,6 +143,14 @@ def filter_statuses(df: pd.DataFrame) -> pd.DataFrame:
 def write_silver(df: pd.DataFrame, output_path: Path) -> Path:
     """Write Silver data to disk."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
+    df.to_parquet(output_path, index=False)
+    return output_path
+
+
+def write_rejects(df: pd.DataFrame, output_filename: str = "jira_silver_rejects.parquet") -> Path:
+    """Write rejected rows to the Silver rejects folder."""
+    SILVER_REJECTS_DIR.mkdir(parents=True, exist_ok=True)
+    output_path = SILVER_REJECTS_DIR / output_filename
     df.to_parquet(output_path, index=False)
     return output_path
 
@@ -172,7 +191,7 @@ def profile_silver_file(
     top_n: int = 5,
 ) -> Dict[str, object]:
     """
-    Load Silver CSV and return profiling metrics.
+    Load Silver Parquet and return profiling metrics.
     """
     df = pd.read_parquet(silver_path)
     default_categoricals = [
@@ -235,7 +254,9 @@ def run_silver(bronze_path: Path, output_filename: str = "jira_silver.parquet") 
     bronze_df = read_bronze(bronze_path)
     extracted = extract_and_rename_fields(bronze_df)
     cleaned = clean_data(extracted)
-    validated = apply_basic_quality_checks(cleaned)
+    validated, rejects = split_quality_checks(cleaned)
+    if not rejects.empty:
+        write_rejects(rejects)
     filtered = filter_statuses(validated)
     output_path = SILVER_DIR / output_filename
     return write_silver(filtered, output_path)

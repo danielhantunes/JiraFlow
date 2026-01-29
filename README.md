@@ -176,6 +176,19 @@ This step is optional but recommended as a **quality gate between Silver and Gol
 
 ---
 
+## ✅ Silver Quality Checks and Rejects
+
+During Silver processing, basic quality checks are applied:
+- Rows missing `issue_id` or `created_at` are rejected
+- Duplicate `issue_id` rows are rejected
+
+Rejected rows are saved to:
+`data/silver/rejects/jira_silver_rejects.parquet`
+
+This keeps the Silver dataset clean while preserving discarded records for auditing.
+
+---
+
 ## SLA Calculation Logic
 - SLA is calculated as **resolution time in business hours**
 - Business hours exclude weekends and national holidays

@@ -12,6 +12,7 @@ data/bronze/*
 !data/bronze/.gitkeep
 data/silver/*
 !data/silver/.gitkeep
+!data/silver/rejects/.gitkeep
 data/gold/*
 !data/gold/.gitkeep
 *.log
