@@ -13,6 +13,7 @@ from src.utils.config import SILVER_CLEAN_DIR, SILVER_REJECTS_DIR
 
 def read_bronze(bronze_path: Path) -> pd.DataFrame:
     """Read Bronze data from disk."""
+    # Bronze is stored as Parquet for efficient reads.
     return pd.read_parquet(bronze_path)
 
 
@@ -20,6 +21,7 @@ def extract_and_rename_fields(df: pd.DataFrame) -> pd.DataFrame:
     """
     Extract nested fields and standardize column names.
     """
+    # Normalize list-like objects coming from Parquet.
     def _normalize_items(items: object) -> list | None:
         if isinstance(items, list):
             return items
@@ -31,6 +33,7 @@ def extract_and_rename_fields(df: pd.DataFrame) -> pd.DataFrame:
         return None
 
     def _first_item_value(series: pd.Series, key: str) -> pd.Series:
+        # Extract a key from the first element of a list of dicts.
         def _extract(items: object) -> object:
             normalized = _normalize_items(items)
             if normalized and isinstance(normalized[0], dict):
@@ -67,7 +70,7 @@ def extract_and_rename_fields(df: pd.DataFrame) -> pd.DataFrame:
     if "id" in selected.columns:
         selected["issue_id"] = selected["id"].astype("string")
 
-    # Legacy Jira API field fallbacks (if present)
+    # Legacy Jira API field fallbacks (if present).
     legacy_map = {
         "fields.issuetype.name": "issue_type",
         "fields.assignee.displayName": "assignee_name",
@@ -115,6 +118,7 @@ def split_quality_checks(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
     missing_created_at = df["created_at"].isna()
     duplicate_issue_id = df["issue_id"].duplicated(keep="first")
 
+    # Tag rows with a single reject reason to keep rejects simple to review.
     reject_reason = pd.Series(pd.NA, index=df.index, dtype="string")
     reject_reason = reject_reason.mask(missing_issue_id, "missing_issue_id")
     reject_reason = reject_reason.mask(
@@ -134,6 +138,7 @@ def filter_statuses(df: pd.DataFrame) -> pd.DataFrame:
 
     Open issues are retained in Silver but excluded from SLA in Gold.
     """
+    # Keep only statuses needed for downstream SLA processing.
     return df[df["status"].isin(["Open", "Done", "Resolved"])]
 
 
@@ -146,6 +151,7 @@ def write_silver(df: pd.DataFrame, output_path: Path) -> Path:
 
 def write_rejects(df: pd.DataFrame, output_filename: str = "jira_silver_rejects.parquet") -> Path:
     """Write rejected rows to the Silver rejects folder."""
+    # Persist rejects for auditing/debugging.
     SILVER_REJECTS_DIR.mkdir(parents=True, exist_ok=True)
     output_path = SILVER_REJECTS_DIR / output_filename
     df.to_parquet(output_path, index=False)

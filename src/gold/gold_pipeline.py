@@ -24,6 +24,7 @@ from src.utils.date_utils import fetch_public_holidays
 def read_silver(silver_path: Path) -> pd.DataFrame:
     """Read Silver data from disk."""
     df = pd.read_parquet(silver_path)
+    # Convert ISO strings back to timezone-aware datetimes for calculations.
     df["created_at"] = pd.to_datetime(df["created_at"], errors="coerce", utc=True)
     df["resolved_at"] = pd.to_datetime(df["resolved_at"], errors="coerce", utc=True)
     return df
@@ -58,6 +59,7 @@ def calculate_sla_metrics(df: pd.DataFrame) -> pd.DataFrame:
         years = {DEFAULT_HOLIDAY_YEAR}
     holidays = build_holiday_set(years)
 
+    # Compute business-hour resolution time per issue.
     df["resolution_time_business_hours"] = df.apply(
         lambda row: calculate_business_hours(
             row["created_at"], row["resolved_at"], holidays

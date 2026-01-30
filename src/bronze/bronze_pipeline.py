@@ -13,7 +13,7 @@ from src.utils.config import BRONZE_DIR
 
 def read_raw_json(raw_file_path: Path) -> Dict:
     """Read the raw JSON file from disk."""
-    # TODO: Handle large files with streaming if needed.
+    # Read the entire JSON payload into memory.
     with raw_file_path.open("r", encoding="utf-8") as file:
         return json.load(file)
 
@@ -41,7 +41,8 @@ def normalize_issues(raw_json: Dict) -> pd.DataFrame:
 def add_source_file(df: pd.DataFrame, source_file: Path) -> pd.DataFrame:
     """Add a source file column for lineage."""
     df = df.copy()
-    df["source_file"] = source_file.name  # Lightweight lineage field.
+    # Keep filename for traceability across layers.
+    df["source_file"] = source_file.name
     return df
 
 
@@ -100,6 +101,7 @@ def basic_quality_checks(df: pd.DataFrame) -> Dict[str, int]:
 
     Returns counts of missing required fields and duplicates.
     """
+    # Basic counts used for manual inspection.
     missing_issue_id = int(df["issue_id"].isna().sum()) if "issue_id" in df.columns else 0
     missing_created_at = (
         int(df["created_at"].isna().sum()) if "created_at" in df.columns else 0

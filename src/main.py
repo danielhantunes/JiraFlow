@@ -10,10 +10,11 @@ from src.silver.silver_pipeline import run_silver
 
 def run_pipeline() -> None:
     """Run the end-to-end pipeline."""
+    # Orchestrate all layers in order.
     raw_path = ingest_raw_data()
     bronze_path = run_bronze(raw_path)
     run_silver(bronze_path)
-    run_gold()
+run_gold()
 
 
 if __name__ == "__main__":

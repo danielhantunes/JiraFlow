@@ -8,6 +8,7 @@ from pathlib import Path
 
 def _get_project_root() -> Path:
     """Return the project root directory based on this file location."""
+    # Keep project-relative paths stable regardless of CWD.
     return Path(__file__).resolve().parents[2]
 
 

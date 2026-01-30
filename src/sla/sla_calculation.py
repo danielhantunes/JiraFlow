@@ -26,6 +26,7 @@ def calculate_business_hours(
     total_hours = 0.0
     current = start_dt
 
+    # Preserve timezone awareness when constructing day boundaries.
     tzinfo = start_dt.tzinfo or end_dt.tzinfo
 
     while current.date() <= end_dt.date():
