@@ -120,7 +120,6 @@ def ingest_raw_data() -> Path | list[Path]:
     """
     ensure_raw_dir()
 
-    # Prefer local file for dev/test; fall back to Azure when missing.
     if RAW_INPUT_PATH.exists():
         return copy_local_raw_file(RAW_INPUT_PATH, RAW_DIR)
 

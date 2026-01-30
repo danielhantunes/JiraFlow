@@ -23,8 +23,6 @@ def fetch_public_holidays(
 ) -> Set[date]:
     """
     Fetch public holidays for a given year and country.
-
-    TODO: Replace with a more resilient integration (retries, caching).
     """
     # Build URL for the Nager public holidays API.
     base_url = api_url or HOLIDAY_API_URL

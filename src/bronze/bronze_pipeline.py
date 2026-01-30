@@ -13,7 +13,6 @@ from src.utils.config import BRONZE_DIR
 
 def read_raw_json(raw_file_path: Path) -> Dict:
     """Read the raw JSON file from disk."""
-    # Read the entire JSON payload into memory.
     with raw_file_path.open("r", encoding="utf-8") as file:
         return json.load(file)
 
@@ -29,19 +28,15 @@ def validate_raw_schema(raw_json: Dict) -> None:
 def normalize_issues(raw_json: Dict) -> pd.DataFrame:
     """
     Normalize nested Jira JSON into a flat table.
-
-    TODO: Validate schema and adjust fields for the actual file structure.
     """
     validate_raw_schema(raw_json)
     issues = raw_json.get("issues", [])
-    # Minimal normalization: flatten nested JSON into a tabular structure.
     return pd.json_normalize(issues)
 
 
 def add_source_file(df: pd.DataFrame, source_file: Path) -> pd.DataFrame:
     """Add a source file column for lineage."""
     df = df.copy()
-    # Keep filename for traceability across layers.
     df["source_file"] = source_file.name
     return df
 
@@ -58,7 +53,6 @@ def profile_dataframe(
         dict with row count, null percentage per column, cardinality per column,
         and top values for categorical columns.
     """
-    # Optional profiling for quick data-quality checks.
     categorical_columns = list(categorical_columns or [])
     def _safe_value(value: object) -> object:
         if isinstance(value, (list, dict)):
@@ -101,7 +95,6 @@ def basic_quality_checks(df: pd.DataFrame) -> Dict[str, int]:
 
     Returns counts of missing required fields and duplicates.
     """
-    # Basic counts used for manual inspection.
     missing_issue_id = int(df["issue_id"].isna().sum()) if "issue_id" in df.columns else 0
     missing_created_at = (
         int(df["created_at"].isna().sum()) if "created_at" in df.columns else 0

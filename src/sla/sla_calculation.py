@@ -17,7 +17,6 @@ def calculate_business_hours(
     Calculate business hours between two datetimes.
 
     Uses a 24-hour business day and excludes weekends/holidays.
-    TODO: Adjust for timezones and custom business calendars if required.
     """
     if end_dt <= start_dt:
         return 0.0
@@ -29,6 +28,7 @@ def calculate_business_hours(
     # Preserve timezone awareness when constructing day boundaries.
     tzinfo = start_dt.tzinfo or end_dt.tzinfo
 
+    # Iterate day by day, only counting intervals on business days.
     while current.date() <= end_dt.date():
         is_weekday = current.weekday() < 5
         is_holiday = current.date() in holidays_set
@@ -48,8 +48,6 @@ def calculate_business_hours(
 def get_expected_sla_hours(priority: str) -> int:
     """
     Return expected SLA hours based on priority.
-
-    TODO: Replace with business-approved SLA matrix.
     """
     mapping = {
         "High": 24,

@@ -24,7 +24,6 @@ from src.utils.date_utils import fetch_public_holidays
 def read_silver(silver_path: Path) -> pd.DataFrame:
     """Read Silver data from disk."""
     df = pd.read_parquet(silver_path)
-    # Convert ISO strings back to timezone-aware datetimes for calculations.
     df["created_at"] = pd.to_datetime(df["created_at"], errors="coerce", utc=True)
     df["resolved_at"] = pd.to_datetime(df["resolved_at"], errors="coerce", utc=True)
     return df
@@ -47,19 +46,18 @@ def calculate_sla_metrics(df: pd.DataFrame) -> pd.DataFrame:
     """Calculate SLA metrics for resolved issues."""
     df = df.copy()
 
-    # Holiday lookup is used to exclude non-business days from SLA time.
     created_years = (
         pd.to_datetime(df["created_at"], errors="coerce", utc=True).dt.year.dropna().unique()
     )
     resolved_years = (
         pd.to_datetime(df["resolved_at"], errors="coerce", utc=True).dt.year.dropna().unique()
     )
+    # Ensure holiday coverage for any year present in created/resolved timestamps.
     years = set(created_years) | set(resolved_years)
     if not years:
         years = {DEFAULT_HOLIDAY_YEAR}
     holidays = build_holiday_set(years)
 
-    # Compute business-hour resolution time per issue.
     df["resolution_hours"] = df.apply(
         lambda row: calculate_business_hours(
             row["created_at"], row["resolved_at"], holidays
