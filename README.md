@@ -45,6 +45,7 @@ project_root/
 │   ├── silver/
 │   │   ├── clean/
 │   │   └── rejects/
+│   ├── reference/
 │   └── gold/
 ├── src/
 │   ├── ingestion/   # Raw data ingestion
@@ -234,6 +235,7 @@ This keeps the Silver dataset clean while preserving discarded records for audit
 - Business hours exclude weekends and national holidays
 - Each business day counts **24 hours**
 - Holiday years are derived from the data (`created_at` and `resolved_at`)
+- Holiday data is cached locally under `data/reference/` to avoid repeated API calls
 - Open issues are excluded from SLA metrics
 - SLA is considered **met** when:
 

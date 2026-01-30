@@ -5,9 +5,15 @@ from __future__ import annotations
 from datetime import date
 import json
 from typing import Iterable, Set
+from pathlib import Path
 from urllib.request import urlopen
 
-from src.utils.config import DEFAULT_HOLIDAY_YEAR, HOLIDAY_API_URL, HOLIDAY_COUNTRY_CODE
+from src.utils.config import (
+    DEFAULT_HOLIDAY_YEAR,
+    HOLIDAY_API_URL,
+    HOLIDAY_COUNTRY_CODE,
+    REFERENCE_DIR,
+)
 
 
 def fetch_public_holidays(
@@ -26,9 +32,16 @@ def fetch_public_holidays(
     holiday_year = year if year is not None else DEFAULT_HOLIDAY_YEAR
     url = f"{base_url}/{holiday_year}/{country}"
 
-    # Simple HTTP fetch using stdlib to avoid extra dependencies.
-    with urlopen(url, timeout=30) as response:
-        payload = response.read().decode("utf-8")
+    cache_path = REFERENCE_DIR / f"holidays_{country}_{holiday_year}.json"
+    if cache_path.exists():
+        payload = cache_path.read_text(encoding="utf-8")
+    else:
+        # Simple HTTP fetch using stdlib to avoid extra dependencies.
+        with urlopen(url, timeout=30) as response:
+            payload = response.read().decode("utf-8")
+        REFERENCE_DIR.mkdir(parents=True, exist_ok=True)
+        cache_path.write_text(payload, encoding="utf-8")
+
     holidays = json.loads(payload)
 
     filtered = [
