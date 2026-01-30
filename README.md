@@ -96,7 +96,7 @@ pip install -r requirements.txt
 Option A — place the Jira export file in the project root:
 
 ```text
-jira_issues_raw.json
+jira_issues_raw.json (or set RAW_INPUT_FILENAME)
 ```
 
 Option B — skip local file and use Azure Blob ingestion via environment variables.
@@ -159,6 +159,11 @@ Copy the example environment file and fill in your values:
 
 ```bash
 cp .env.example .env
+```
+
+On Windows (PowerShell):
+```bash
+Copy-Item .env.example .env
 ```
 
 Environment variables are loaded locally using a lightweight `.env` parser (stdlib).

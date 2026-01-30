@@ -41,7 +41,7 @@ GOLD_DIR = DATA_DIR / "gold"
 SILVER_REJECTS_DIR = SILVER_DIR / "rejects"
 REFERENCE_DIR = DATA_DIR / "reference"
 
-RAW_INPUT_FILENAME = os.getenv("RAW_INPUT_FILENAME", "jira_issues_raw.txt")
+RAW_INPUT_FILENAME = os.getenv("RAW_INPUT_FILENAME", "jira_issues_raw.json")
 RAW_INPUT_PATH = PROJECT_ROOT / RAW_INPUT_FILENAME
 
 HOLIDAY_API_URL = os.getenv("HOLIDAY_API_URL", "https://date.nager.at/api/v3/PublicHolidays")
