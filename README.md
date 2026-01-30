@@ -25,6 +25,8 @@ The goal is to demonstrate **data modeling, data quality practices, and pipeline
 | **Silver** | Extract nested fields, standardize columns, clean data, and filter statuses (Parquet output) |
 | **Gold** | Keep only Done / Resolved issues and compute SLA metrics |
 
+Note: Raw JSON is first normalized (flattened) into a tabular structure, then specific fields are extracted and renamed in Silver.
+
 ```
 Raw  →  Bronze  →  Silver  →  Gold
  |        |         |         |
@@ -93,6 +95,14 @@ Each layer can also be executed independently via its corresponding module.
 - `data/silver/clean/jira_silver.parquet`
 - `data/silver/rejects/jira_silver_rejects.parquet`
 - `data/gold/jira_gold.parquet`
+
+Parquet is used as the canonical format because it is columnar, compact, and faster for analytics workloads.
+CSV export is optional for analyst convenience.
+
+Optional CSV export:
+```bash
+python -c "import pandas as pd; df = pd.read_parquet('data/gold/jira_gold.parquet'); df.to_csv('data/gold/jira_gold.csv', index=False)"
+```
 
 ---
 
