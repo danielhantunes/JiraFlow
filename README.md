@@ -1,18 +1,13 @@
-# 🚧 Jira Medallion Pipeline  
-*This project is under active development.*
+# Jira Medallion Pipeline
 
 ## Overview
-This project implements a **local data engineering pipeline** that ingests a nested JSON file of Jira issues and processes it through a **Medallion architecture (Raw → Bronze → Silver → Gold)** to produce reliable SLA metrics.
+This project implements a **local data engineering pipeline** that ingests a nested JSON file of Jira issues and processes it through a **Medallion architecture (Raw → Bronze → Silver → Gold)** to produce reliable SLA metrics and aggregated reports.
 
-The goal is to demonstrate **data modeling, data quality practices, and pipeline structuring** aligned with real-world analytics and reporting use cases.
-
----
-
-## Project Purpose
-- Ingest Jira issue data from a JSON source
-- Normalize and clean semi-structured data
-- Apply business rules for SLA calculation
-- Produce analytics-ready datasets using layered data design
+### Quick start
+```bash
+pip install -r requirements.txt
+python -m src.main
+```
 
 ---
 
@@ -35,6 +30,14 @@ data/raw data/bronze data/silver data/gold
 
 ---
 
+## Requirement Coverage
+- **Medallion layers** implemented with local persistence for each stage
+- **Azure Blob ingestion** via Service Principal (read-only)
+- **Nested JSON handling** with normalization and field extraction
+- **SLA rules** (business days, weekends/holidays, priority mapping)
+- **Gold reports** for SLA average by analyst and by issue type
+- **Data quality** with Silver rejects output
+
 ## Project Structure
 
 ```
@@ -47,6 +50,7 @@ project_root/
 │   │   └── rejects/
 │   ├── reference/
 │   └── gold/
+│       └── reports/
 ├── src/
 │   ├── ingestion/   # Raw data ingestion
 │   ├── bronze/      # Minimal normalization (raw-like)
@@ -64,6 +68,22 @@ project_root/
 ---
 
 ## How to Run
+
+### (Optional) Create a virtual environment
+```bash
+python -m venv .venv
+```
+
+Activate it:
+```bash
+# Windows (PowerShell)
+.\.venv\Scripts\Activate.ps1
+
+# macOS / Linux
+source .venv/bin/activate
+```
+
+---
 
 ### Install dependencies
 ```bash
@@ -91,20 +111,20 @@ python -m src.main
 Each layer can also be executed independently via its corresponding module.
 
 ### Output files
-- `data/raw/jira_issues_raw.json`
-- `data/bronze/jira_bronze.parquet`
-- `data/silver/clean/jira_silver.parquet`
-- `data/silver/rejects/jira_silver_rejects.parquet`
-- `data/gold/jira_gold.parquet`
-- `data/gold/reports/sla_avg_by_assignee.csv`
-- `data/gold/reports/sla_avg_by_issue_type.csv`
+- `data/raw/<original_source_name>.json`
+- `data/bronze/bronze_issues.parquet`
+- `data/silver/clean/silver_issues.parquet`
+- `data/silver/rejects/silver_rejects.parquet`
+- `data/gold/gold_sla_issues.parquet`
+- `data/gold/reports/gold_sla_by_analyst.csv`
+- `data/gold/reports/gold_sla_by_issue_type.csv`
 
 Parquet is used as the canonical format because it is columnar, compact, and faster for analytics workloads.
 CSV export is optional for analyst convenience.
 
 Optional CSV export:
 ```bash
-python -c "import pandas as pd; df = pd.read_parquet('data/gold/jira_gold.parquet'); df.to_csv('data/gold/jira_gold.csv', index=False)"
+python -c "import pandas as pd; df = pd.read_parquet('data/gold/gold_sla_issues.parquet'); df.to_csv('data/gold/gold_sla_issues.csv', index=False)"
 ```
 
 ---
@@ -158,25 +178,12 @@ Note: Bronze is minimally transformed and may include nested fields. Silver prof
 
 ### Run
 ```bash
-python -c "from pathlib import Path; from src.bronze.bronze_pipeline import profile_bronze_file, format_profile_output; profile = profile_bronze_file(Path('data/bronze/jira_bronze.parquet'), categorical_columns=['issue_type','status','priority']); print(format_profile_output(profile))"
-```
-
-### Example output
-```
-Row count: 12453
-Null % by column:
-  - assignee: 12.4%
-Cardinality by column:
-  - issue_type: 7
-Top values (categorical):
-  - status:
-      Done: 5321
-      In Progress: 4182
+python -c "from pathlib import Path; from src.bronze.bronze_pipeline import profile_bronze_file, format_profile_output; profile = profile_bronze_file(Path('data/bronze/bronze_issues.parquet'), categorical_columns=['issue_type','status','priority']); print(format_profile_output(profile))"
 ```
 
 You can also preview a small sample for a quick visual check:
 ```bash
-python -c "import pandas as pd; from src.bronze.bronze_pipeline import preview_dataframe; df = pd.read_parquet('data/bronze/jira_bronze.parquet'); print(preview_dataframe(df, n=10))"
+python -c "import pandas as pd; from src.bronze.bronze_pipeline import preview_dataframe; df = pd.read_parquet('data/bronze/bronze_issues.parquet'); print(preview_dataframe(df, n=10))"
 ```
 
 This step is optional but recommended as a **quality gate between Bronze and Silver**.
@@ -189,12 +196,12 @@ The Silver layer includes optional profiling utilities to validate cleaned data 
 
 ### Run
 ```bash
-python -c "from pathlib import Path; from src.silver.silver_pipeline import profile_silver_file, format_profile_output; profile = profile_silver_file(Path('data/silver/clean/jira_silver.parquet'), categorical_columns=['issue_type','status','priority','assignee_name','assignee_id','assignee_email']); print(format_profile_output(profile))"
+python -c "from pathlib import Path; from src.silver.silver_pipeline import profile_silver_file, format_profile_output; profile = profile_silver_file(Path('data/silver/clean/silver_issues.parquet'), categorical_columns=['issue_type','status','priority','assignee_name','assignee_id','assignee_email']); print(format_profile_output(profile))"
 ```
 
 ### Preview
 ```bash
-python -c "import pandas as pd; from src.silver.silver_pipeline import preview_dataframe; df = pd.read_parquet('data/silver/clean/jira_silver.parquet'); print(preview_dataframe(df, n=10))"
+python -c "import pandas as pd; from src.silver.silver_pipeline import preview_dataframe; df = pd.read_parquet('data/silver/clean/silver_issues.parquet'); print(preview_dataframe(df, n=10))"
 ```
 
 This step is optional but recommended as a **quality gate between Silver and Gold**.
@@ -207,12 +214,12 @@ The Gold layer includes optional profiling utilities to validate the final SLA t
 
 ### Run
 ```bash
-python -c "from pathlib import Path; from src.gold.gold_pipeline import profile_gold_file, format_profile_output; profile = profile_gold_file(Path('data/gold/jira_gold.parquet')); print(format_profile_output(profile))"
+python -c "from pathlib import Path; from src.gold.gold_pipeline import profile_gold_file, format_profile_output; profile = profile_gold_file(Path('data/gold/gold_sla_issues.parquet')); print(format_profile_output(profile))"
 ```
 
 ### Preview
 ```bash
-python -c "import pandas as pd; from src.gold.gold_pipeline import preview_dataframe; df = pd.read_parquet('data/gold/jira_gold.parquet'); print(preview_dataframe(df, n=10))"
+python -c "import pandas as pd; from src.gold.gold_pipeline import preview_dataframe; df = pd.read_parquet('data/gold/gold_sla_issues.parquet'); print(preview_dataframe(df, n=10))"
 ```
 
 This step is optional and helps validate the final Gold output.
@@ -226,7 +233,7 @@ During Silver processing, basic quality checks are applied:
 - Duplicate `issue_id` rows are rejected
 
 Rejected rows are saved to:
-`data/silver/rejects/jira_silver_rejects.parquet`
+`data/silver/rejects/silver_rejects.parquet`
 
 This keeps the Silver dataset clean while preserving discarded records for auditing.
 
@@ -271,9 +278,9 @@ actual_hours ≤ expected_hours
 - priority
 - created_at
 - resolved_at
-- resolution_time_business_hours
-- expected_sla_hours
-- sla_status
+- resolution_hours
+- sla_expected_hours
+- is_sla_met
 
 Note: `assignee_id` and `assignee_email` are excluded from Gold to keep the
 analytics table focused on reporting fields.
@@ -282,7 +289,7 @@ analytics table focused on reporting fields.
 
 ## Data Dictionary
 
-### Gold SLA Table (`data/gold/jira_gold.parquet`)
+### Gold SLA Table (`data/gold/gold_sla_issues.parquet`)
 | Column | Description |
 |--------|-------------|
 | issue_id | Unique Jira issue identifier |
@@ -291,23 +298,39 @@ analytics table focused on reporting fields.
 | priority | Issue priority (High, Medium, Low) |
 | created_at | Issue creation timestamp (UTC, ISO 8601) |
 | resolved_at | Issue resolution timestamp (UTC, ISO 8601) |
-| resolution_time_business_hours | Resolution time in business hours |
-| expected_sla_hours | Target SLA hours based on priority |
-| sla_status | SLA outcome: met or violated |
+| resolution_hours | Resolution time in business hours |
+| sla_expected_hours | Target SLA hours based on priority |
+| is_sla_met | SLA outcome indicator (true/false) |
 
-### Report: SLA Médio por Analista (`data/gold/reports/sla_avg_by_assignee.csv`)
+### Report: Average SLA by Assignee (`data/gold/reports/gold_sla_by_analyst.csv`)
 | Column | Description |
 |--------|-------------|
 | assignee_name | Analyst responsible for the issues |
 | issue_count | Number of resolved issues for the analyst |
 | sla_avg_hours | Average SLA (business hours) for the analyst |
 
-### Report: SLA Médio por Tipo de Chamado (`data/gold/reports/sla_avg_by_issue_type.csv`)
+### Report: Average SLA by Issue Type (`data/gold/reports/gold_sla_by_issue_type.csv`)
 | Column | Description |
 |--------|-------------|
 | issue_type | Type/category of issue |
 | issue_count | Number of resolved issues for the type |
 | sla_avg_hours | Average SLA (business hours) for the type |
+
+---
+
+## Optional Azure Cloud Architecture (Managed, Cloud-First)
+If this pipeline were deployed on Azure, a managed and scalable architecture could be:
+
+- **Storage (Raw/Bronze/Silver/Gold):** Azure Data Lake Storage Gen2 organized by Medallion layer
+- **Ingestion:** Azure Data Factory (Copy Activities) from Blob Storage into ADLS Gen2
+- **Processing (lightweight):** Azure Functions or Synapse Serverless for simple transforms
+- **Processing (at scale):** Azure Databricks or Synapse Spark for larger volumes and complex transforms
+- **Orchestration:** Azure Data Factory or Synapse Pipelines
+- **Secrets Management:** Azure Key Vault
+- **Monitoring and Observability:** Azure Monitor + Log Analytics
+
+This preserves the Medallion pattern while keeping costs low at small scale and
+providing a clear path to Spark-based processing as complexity grows.
 
 ---
 

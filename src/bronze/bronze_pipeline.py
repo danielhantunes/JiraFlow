@@ -187,7 +187,7 @@ def _coerce_raw_paths(raw_file_path: RawPathInput) -> List[Path]:
 
 def run_bronze(
     raw_file_path: RawPathInput,
-    output_filename: str = "jira_bronze.parquet",
+    output_filename: str = "bronze_issues.parquet",
 ) -> Path:
     """Execute the Bronze pipeline."""
     raw_paths = _coerce_raw_paths(raw_file_path)

@@ -60,17 +60,18 @@ def calculate_sla_metrics(df: pd.DataFrame) -> pd.DataFrame:
     holidays = build_holiday_set(years)
 
     # Compute business-hour resolution time per issue.
-    df["resolution_time_business_hours"] = df.apply(
+    df["resolution_hours"] = df.apply(
         lambda row: calculate_business_hours(
             row["created_at"], row["resolved_at"], holidays
         ),
         axis=1,
     )
-    df["expected_sla_hours"] = df["priority"].apply(get_expected_sla_hours)
-    df["sla_status"] = df.apply(
+    df["sla_expected_hours"] = df["priority"].apply(get_expected_sla_hours)
+    df["is_sla_met"] = df.apply(
         lambda row: get_sla_status(
-            row["resolution_time_business_hours"], row["expected_sla_hours"]
-        ),
+            row["resolution_hours"], row["sla_expected_hours"]
+        )
+        == "met",
         axis=1,
     )
 
@@ -92,7 +93,7 @@ def write_gold(df: pd.DataFrame, output_path: Path) -> Path:
 
 def build_sla_reports(df: pd.DataFrame) -> Dict[str, pd.DataFrame]:
     """Build aggregated SLA reports from Gold data."""
-    required_cols = {"issue_id", "issue_type", "assignee_name", "resolution_time_business_hours"}
+    required_cols = {"issue_id", "issue_type", "assignee_name", "resolution_hours"}
     missing = required_cols - set(df.columns)
     if missing:
         missing_list = ", ".join(sorted(missing))
@@ -102,7 +103,7 @@ def build_sla_reports(df: pd.DataFrame) -> Dict[str, pd.DataFrame]:
         df.groupby("assignee_name", dropna=False)
         .agg(
             issue_count=("issue_id", "count"),
-            sla_avg_hours=("resolution_time_business_hours", "mean"),
+            sla_avg_hours=("resolution_hours", "mean"),
         )
         .reset_index()
     )
@@ -112,15 +113,15 @@ def build_sla_reports(df: pd.DataFrame) -> Dict[str, pd.DataFrame]:
         df.groupby("issue_type", dropna=False)
         .agg(
             issue_count=("issue_id", "count"),
-            sla_avg_hours=("resolution_time_business_hours", "mean"),
+            sla_avg_hours=("resolution_hours", "mean"),
         )
         .reset_index()
     )
     by_issue_type["sla_avg_hours"] = by_issue_type["sla_avg_hours"].round(2)
 
     return {
-        "sla_avg_by_assignee.csv": by_assignee,
-        "sla_avg_by_issue_type.csv": by_issue_type,
+        "gold_sla_by_analyst.csv": by_assignee,
+        "gold_sla_by_issue_type.csv": by_issue_type,
     }
 
 
@@ -180,7 +181,7 @@ def profile_gold_file(
         "status",
         "priority",
         "assignee_name",
-        "sla_status",
+        "is_sla_met",
     ]
     return profile_dataframe(
         df,
@@ -230,8 +231,8 @@ def preview_dataframe(df: pd.DataFrame, n: int = 10) -> str:
 
 
 def run_gold(
-    silver_path: Path = SILVER_CLEAN_DIR / "jira_silver.parquet",
-    output_filename: str = "jira_gold.parquet",
+    silver_path: Path = SILVER_CLEAN_DIR / "silver_issues.parquet",
+    output_filename: str = "gold_sla_issues.parquet",
 ) -> Path:
     """Execute the Gold pipeline."""
     silver_df = read_silver(silver_path)

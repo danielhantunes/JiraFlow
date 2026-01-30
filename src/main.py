@@ -14,7 +14,7 @@ def run_pipeline() -> None:
     raw_path = ingest_raw_data()
     bronze_path = run_bronze(raw_path)
     run_silver(bronze_path)
-run_gold()
+    run_gold()
 
 
 if __name__ == "__main__":

@@ -16,6 +16,7 @@ data/silver/*
 !data/silver/rejects/.gitkeep
 data/gold/*
 !data/gold/.gitkeep
+!data/gold/reports/.gitkeep
 data/reference/*
 !data/reference/.gitkeep
 *.log

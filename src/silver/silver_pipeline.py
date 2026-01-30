@@ -149,7 +149,7 @@ def write_silver(df: pd.DataFrame, output_path: Path) -> Path:
     return output_path
 
 
-def write_rejects(df: pd.DataFrame, output_filename: str = "jira_silver_rejects.parquet") -> Path:
+def write_rejects(df: pd.DataFrame, output_filename: str = "silver_rejects.parquet") -> Path:
     """Write rejected rows to the Silver rejects folder."""
     # Persist rejects for auditing/debugging.
     SILVER_REJECTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -252,7 +252,7 @@ def preview_dataframe(df: pd.DataFrame, n: int = 10) -> str:
     return "\n".join(lines)
 
 
-def run_silver(bronze_path: Path, output_filename: str = "jira_silver.parquet") -> Path:
+def run_silver(bronze_path: Path, output_filename: str = "silver_issues.parquet") -> Path:
     """Execute the Silver pipeline."""
     bronze_df = read_bronze(bronze_path)
     extracted = extract_and_rename_fields(bronze_df)
