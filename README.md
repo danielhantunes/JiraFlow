@@ -96,6 +96,8 @@ Each layer can also be executed independently via its corresponding module.
 - `data/silver/clean/jira_silver.parquet`
 - `data/silver/rejects/jira_silver_rejects.parquet`
 - `data/gold/jira_gold.parquet`
+- `data/gold/reports/sla_avg_by_assignee.csv`
+- `data/gold/reports/sla_avg_by_issue_type.csv`
 
 Parquet is used as the canonical format because it is columnar, compact, and faster for analytics workloads.
 CSV export is optional for analyst convenience.
@@ -275,6 +277,37 @@ actual_hours ≤ expected_hours
 
 Note: `assignee_id` and `assignee_email` are excluded from Gold to keep the
 analytics table focused on reporting fields.
+
+---
+
+## Data Dictionary
+
+### Gold SLA Table (`data/gold/jira_gold.parquet`)
+| Column | Description |
+|--------|-------------|
+| issue_id | Unique Jira issue identifier |
+| issue_type | Type/category of issue (e.g., Bug, Task) |
+| assignee_name | Analyst responsible for the issue |
+| priority | Issue priority (High, Medium, Low) |
+| created_at | Issue creation timestamp (UTC, ISO 8601) |
+| resolved_at | Issue resolution timestamp (UTC, ISO 8601) |
+| resolution_time_business_hours | Resolution time in business hours |
+| expected_sla_hours | Target SLA hours based on priority |
+| sla_status | SLA outcome: met or violated |
+
+### Report: SLA Médio por Analista (`data/gold/reports/sla_avg_by_assignee.csv`)
+| Column | Description |
+|--------|-------------|
+| assignee_name | Analyst responsible for the issues |
+| issue_count | Number of resolved issues for the analyst |
+| sla_avg_hours | Average SLA (business hours) for the analyst |
+
+### Report: SLA Médio por Tipo de Chamado (`data/gold/reports/sla_avg_by_issue_type.csv`)
+| Column | Description |
+|--------|-------------|
+| issue_type | Type/category of issue |
+| issue_count | Number of resolved issues for the type |
+| sla_avg_hours | Average SLA (business hours) for the type |
 
 ---
 

@@ -90,6 +90,52 @@ def write_gold(df: pd.DataFrame, output_path: Path) -> Path:
     return output_path
 
 
+def build_sla_reports(df: pd.DataFrame) -> Dict[str, pd.DataFrame]:
+    """Build aggregated SLA reports from Gold data."""
+    required_cols = {"issue_id", "issue_type", "assignee_name", "resolution_time_business_hours"}
+    missing = required_cols - set(df.columns)
+    if missing:
+        missing_list = ", ".join(sorted(missing))
+        raise ValueError(f"Gold data is missing required columns: {missing_list}")
+
+    by_assignee = (
+        df.groupby("assignee_name", dropna=False)
+        .agg(
+            issue_count=("issue_id", "count"),
+            sla_avg_hours=("resolution_time_business_hours", "mean"),
+        )
+        .reset_index()
+    )
+    by_assignee["sla_avg_hours"] = by_assignee["sla_avg_hours"].round(2)
+
+    by_issue_type = (
+        df.groupby("issue_type", dropna=False)
+        .agg(
+            issue_count=("issue_id", "count"),
+            sla_avg_hours=("resolution_time_business_hours", "mean"),
+        )
+        .reset_index()
+    )
+    by_issue_type["sla_avg_hours"] = by_issue_type["sla_avg_hours"].round(2)
+
+    return {
+        "sla_avg_by_assignee.csv": by_assignee,
+        "sla_avg_by_issue_type.csv": by_issue_type,
+    }
+
+
+def write_sla_reports(df: pd.DataFrame, output_dir: Path = GOLD_DIR / "reports") -> Dict[str, Path]:
+    """Write aggregated SLA reports to disk."""
+    output_dir.mkdir(parents=True, exist_ok=True)
+    reports = build_sla_reports(df)
+    output_paths: Dict[str, Path] = {}
+    for filename, report_df in reports.items():
+        output_path = output_dir / filename
+        report_df.to_csv(output_path, index=False)
+        output_paths[filename] = output_path
+    return output_paths
+
+
 def profile_dataframe(
     df: pd.DataFrame,
     categorical_columns: Sequence[str] | None = None,
@@ -193,4 +239,6 @@ def run_gold(
     with_sla = calculate_sla_metrics(resolved)
     final_df = select_gold_columns(with_sla)
     output_path = GOLD_DIR / output_filename
-    return write_gold(final_df, output_path)
+    write_gold(final_df, output_path)
+    write_sla_reports(final_df)
+    return output_path
