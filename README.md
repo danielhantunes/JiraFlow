@@ -326,16 +326,19 @@ analytics table focused on reporting fields.
 ## Optional Azure Cloud Architecture (Managed, Cloud-First)
 If this pipeline were deployed on Azure, a managed and scalable architecture could be:
 
-- **Storage (Raw/Bronze/Silver/Gold):** Azure Data Lake Storage Gen2 organized by Medallion layer
+- **Storage (Raw/Bronze/Silver/Gold):** Azure Data Lake Storage Gen2, organized by Medallion layer
 - **Ingestion:** Azure Data Factory (Copy Activities) from Blob Storage into ADLS Gen2
-- **Processing (lightweight):** Azure Functions or Synapse Serverless for simple transforms
-- **Processing (at scale):** Azure Databricks or Synapse Spark for larger volumes and complex transforms
+- **Processing (lightweight):** Azure Functions or Synapse Serverless for simple transformations
+- **Processing (at scale):** Azure Databricks or Synapse Spark for larger volumes and complex transformations
 - **Orchestration:** Azure Data Factory or Synapse Pipelines
 - **Secrets Management:** Azure Key Vault
-- **Monitoring and Observability:** Azure Monitor + Log Analytics
+- **Monitoring and Observability:** Azure Monitor and Log Analytics
 
-This preserves the Medallion pattern while keeping costs low at small scale and
-providing a clear path to Spark-based processing as complexity grows.
+If the data originates from **Jira webhooks**, prefer **Azure Functions** or **Logic Apps** to receive events.
+Use **Event Hub** only when high-volume buffering or fan-out is required.
+
+This architecture preserves the Medallion pattern while keeping costs low at small scale and
+providing a clear evolution path to Spark-based processing as data volume and complexity grow.
 
 ---
 
