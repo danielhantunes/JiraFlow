@@ -266,6 +266,13 @@ actual_hours ≤ expected_hours
 
 ---
 
+## Design Decisions (Short)
+- **Parquet for Bronze/Silver/Gold:** columnar storage is faster and more compact for analytics.
+- **Holiday cache:** API responses are cached locally to avoid repeated calls.
+- **Rejects dataset:** invalid or duplicate rows are preserved for auditability.
+
+---
+
 ## Suggested KPIs (Gold)
 - SLA compliance rate (% met vs violated)
 - Average resolution time (business hours)
@@ -339,6 +346,38 @@ Use **Event Hub** only when high-volume buffering or fan-out is required.
 
 This architecture preserves the Medallion pattern while keeping costs low at small scale and
 providing a clear evolution path to Spark-based processing as data volume and complexity grow.
+
+---
+
+## Assumptions
+- Input JSON includes `issues` as a list of records.
+- `assignee` and `timestamps` are arrays; the first item is used.
+- Timestamps are ISO 8601 and assumed to be in UTC.
+
+---
+
+## Idempotency
+- Re-running the pipeline overwrites outputs in each layer.
+- Raw files are copied as-is for traceability.
+
+---
+
+## Extensibility
+- Add new metrics in `src/gold/gold_pipeline.py` by extending `calculate_sla_metrics`.
+- Add new reports by extending `build_sla_reports`.
+
+---
+
+## Testing Notes
+- Manual validation: run `python -m src.main` and check outputs in `data/`.
+- Review rejects in `data/silver/rejects/` for data quality issues.
+
+---
+
+## Troubleshooting
+- **Parquet engine error:** install `pyarrow` (included in `requirements.txt`).
+- **Azure download failure:** verify Service Principal env vars and container name.
+- **No raw file found:** set `RAW_INPUT_FILENAME` or place the file in the project root.
 
 ---
 
